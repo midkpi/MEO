@@ -16,7 +16,7 @@ keyboard_dyal = (
 
 keyboard_ii = (
     Keyboard(one_time=False, inline=True)
-    .add(OpenLink(label="Купить",  link="https://vk.com/market-215327961?w=product-215327961_10831856"), color=KeyboardButtonColor.POSITIVE)
+    .add(OpenLink(label="Купить",  link="https://vk.com/animmon?w=product-215327961_10832862"), color=KeyboardButtonColor.POSITIVE)
     .get_json()
 )
 

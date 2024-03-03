@@ -286,32 +286,32 @@ async def revard_lvl(user_id):
     lvl = await emy.influence_lvl(influence)
 
     if lvl == 1:
-        return random.randint(5,200)
+        return random.randint(50,200)
     elif lvl == 2:
-        return random.randint(50,400)
+        return random.randint(100,400)
     elif lvl == 3:
-        return random.randint(100,800)
+        return random.randint(150,800)
     elif lvl == 4:
         return random.randint(200,1600)
     elif lvl == 5:
-        return random.randint(300,3200)
+        return random.randint(250,3200)
     elif lvl == 6:
-        return random.randint(400,6400)
+        return random.randint(300,6400)
     elif lvl == 7:
-        return random.randint(500,12800)
+        return random.randint(350,12800)
     elif lvl == 8:
-        return random.randint(600,23600)
+        return random.randint(400,23600)
     elif lvl == 9:
-        return random.randint(700,47200)
+        return random.randint(450,47200)
     elif lvl == 10:
-        return random.randint(800,94400)
+        return random.randint(500,94400)
 
 async def influence_stat(user_id):
     cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
     result = cursor.fetchone()
 
     influence = result[12]
-    next_level_points = [2500, 10000, 50000, 100000, 250000, 500000, 2000000, 3500000, 7000000]
+    next_level_points = [2500, 5000, 10000, 25000, 50000, 100000, 200000, 400000, 700000]
     level = await emy.influence_lvl(influence)
 
     if level < len(next_level_points):
@@ -438,7 +438,7 @@ async def active(user_id, peer_id, message, text):
                 elif action == 'ударить':
                     msg = f'👊😵 @id{user_id}({info[1]}) ударил @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'набухаться':
-                    msg = f'😵🍻😵 @id{user_id}({info[1]}) набухался с @id{user_id_repli}({receiver[1]}), после чего один из  них признался влюбви @id848290624(телке)'
+                    msg = f'😵🍻😵 @id{user_id}({info[1]}) набухался с @id{user_id_repli}({receiver[1]}), после чего один из  них признался влюбви @jd7ex4a4s1(телке)'
                 elif action == 'укусить':
                     msg = f'😈 @id{user_id}({info[1]}) игриво укусил @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'погладить':
@@ -960,7 +960,7 @@ async def hi_handler(message: Message):
                         else:
                             # Check if the user has enough money for the bet
                             if opponent_money < money:
-                                await message.answer(f'❗️| У @id{opponent_id}({opponent_name}) недостаточно денег для участия в дуэли т.к он бомж 🍾🏚💸 иди на трассе работай шлюха 😋🍼')
+                                await message.answer(f'❗️| У @id{opponent_id}({opponent_name}) недостаточно денег для участия в дуэли')
                             else:
                                 await message.answer(f"Игрок @id{user_id}({user_name}) бросает вызов @id{opponent_id}({opponent_name})!\n\nСтавка дуэли: {money}", keyboard=keyboard.keyboard_dyal, attachment=random.choice(emy.random_dyal_start))
                     else:
@@ -973,7 +973,7 @@ async def hi_handler(message: Message):
                             if money < stavka:
                                 await message.answer('❗️| У вас недостаточно денег для участия в дуэли')
                             elif opponent_money < stavka:
-                                await message.answer(f'❗️| У {opponent_name} недостаточно денег для участия в дуэли т.к он бомж 🍾🏚💸 иди на трассе работай шлюха 😋🍼')
+                                await message.answer(f'❗️| У {opponent_name} недостаточно денег для участия в дуэли')
                             elif stavka <= 0:
                                 await message.answer(f'❗️| @id{user_id} ({user_name}) ставка не может быть минусовой или нулевой!')
                             else:
@@ -1308,8 +1308,9 @@ async def hi_handler(message: Message):
             chance_text = "(средняя вероятность) "
         else:
             chance_text = "(высокая вероятность) "
-        reply_text = f"@id{user_id}({user_name})\n🎲 я уверена на {chance}% что это так! - {chance_text}"
+        reply_text = f"@id{user_id}({user_name})\n🎲 я уверена что {sentence} на {chance}% что это так! - {chance_text}"
         await message.answer(reply_text)
+
 
     elif text.startswith('мяв '):
         cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
@@ -1353,6 +1354,10 @@ async def hi_handler(message: Message):
                 await message.answer(f"День рождения пользователя: {hidden_year_message}")
         else:
             await message.answer("У пользователя не указана дата рождения в профиле.")
+
+        return  # Добавляем это ключевое слово, чтобы остановить выполнение кода здесь
+    # Код ниже этой строки не будет выполнен
+
 
     elif len(words) > 0 and words[0] == 'дать' and not message.reply_message:
         cursor.execute('SELECT money, name FROM users WHERE id = %s', (user_id,))
@@ -1409,6 +1414,7 @@ async def hi_handler(message: Message):
                     prompt = text[4:]
                     await message.reply(await generate_a(prompt, message.reply_message.text))
         await update_bd(user_id, peer_id, message)
+
 
 
 #
