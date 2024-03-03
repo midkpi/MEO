@@ -471,7 +471,7 @@ async def active(user_id, peer_id, message, text):
                    msg = f'🔥😱 @id{user_id}({info[1]}) сжег @id{user_id_repli}({receiver[1]}) {res}'
                 elif text == 'продать в рабство':
                    msg = f'💰📢 @id{user_id}({info[1]}) вынес приговор своему рабу @id{user_id_repli}({receiver[1]}), выставив на аукцион'
-                elif text == 'отправить на поле':
+                elif text == 'отправить на поля':
                    msg = f'☠👺 @id{user_id}({info[1]}) избил плеткой @id{user_id_repli}({receiver[1]}), заставив  горбатиться в полях'
                 elif action == 'казнить':
                    msg = f'☠🪓 @id{user_id}({info[1]}) отрубил голову @id{user_id_repli}({receiver[1]}) {res}'
