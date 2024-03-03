@@ -95,16 +95,17 @@ async def update_bd(user_id, peer_id, message):
     else:
         creator = 1
 
-    if result is None and user_id > 0:
-        users_info = await bot.api.users.get(user_id)
-        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, %s, 0, NULL, NULL, 0)", (user_id, f'{users_info[0].first_name} {users_info[0].last_name}', 0))
-    if result_info is None:
+    if result_info is None user_id > 0:
         cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
-    if result_global is None:
+    if result_global is None user_id > 0:
         cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL)", (user_id,))
     if result_roulete is None and user_id > 0:
         cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
-    if user_id > 0:
+
+    if result is None and user_id > 0:
+        users_info = await bot.api.users.get(user_id)
+        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, %s, 0, NULL, NULL, 0)", (user_id, f'{users_info[0].first_name} {users_info[0].last_name}', 0))
+    else:
         money = result[4] + 1
         message_count = result[2] + 1
 
