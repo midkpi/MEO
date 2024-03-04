@@ -520,10 +520,13 @@ async def hi_handler(event: MessageEvent):
         nowdate = t.strftime("%d.%m.%Y")
         timeDay = f"{nowdate}"
 
-        reward_s = await revard_lvl(user_id)
-        cursor.execute('UPDATE users SET rewardet = %s, money = %s WHERE id = %s', (timeDay, result[4] + reward_s, user_id))
-        conn.commit()
-        await event.show_snackbar(f'Награда успешно получена!\nЗачислено {reward_s} котят!')
+        if result[10] != timeDay:
+            reward_s = await revard_lvl(user_id)
+            cursor.execute('UPDATE users SET rewardet = %s, money = %s WHERE id = %s', (timeDay, result[4] + reward_s, user_id))
+            conn.commit()
+            await event.show_snackbar(f'Награда успешно получена!\nЗачислено {reward_s} котят!')
+        else:
+            await event.show_snackbar('Возвращайтесь завтра!')
 
     else:
         await event.show_snackbar(await emy.random_msg())
@@ -865,6 +868,22 @@ async def hi_handler(message: Message):
 
     elif text == 'начать':
         await message.answer(random.choice(emy.random_comm))
+
+    elif text == '/reward':
+        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+
+        delta = datetime.timedelta(hours=9, minutes=0)
+        t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+        nowdate = t.strftime("%d.%m.%Y")
+        timeDay = f"{nowdate}"
+
+        if result[10] != timeDay:
+            reward_s = await revard_lvl(user_id)
+            cursor.execute('UPDATE users SET rewardet = %s, money = %s WHERE id = %s', (timeDay, result[4] + reward_s, user_id))
+            await message.answer(f'Награда успешно получена!\nЗачислено {reward_s} котят!')
+        else:
+            await message.answer('Возвращайтесь завтра!')
 
     elif text == 'беседа':
         await message.answer(await info_group(peer_id, message))
