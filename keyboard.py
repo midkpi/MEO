@@ -20,12 +20,6 @@ keyboard_ii = (
     .get_json()
 )
 
-keyboard_reward = (
-    Keyboard(one_time=False, inline=True)
-    .add(Callback("Ежедневная награда",  payload={"cmd": "daily_reward"}), color=KeyboardButtonColor.POSITIVE)
-    .get_json()
-)
-
 keyboard_atty = (
     Keyboard(one_time=False, inline=True)
     .add(Callback("Еще",  payload={"cmd": "next_atty"}), color=KeyboardButtonColor.POSITIVE)
@@ -65,5 +59,17 @@ keyboard_gry = (
 keyboard_tentacles = (
     Keyboard(one_time=False, inline=True)
     .add(Callback("Еще",  payload={"cmd": "next_tentacles"}), color=KeyboardButtonColor.POSITIVE)
+    .get_json()
+)
+
+keyboard_reward_yes = (
+    Keyboard(one_time=False, inline=True)
+    .add(Callback("Ежедневная награда",  payload={"cmd": "reward_yes"}), color=KeyboardButtonColor.POSITIVE)
+    .get_json()
+)
+
+keyboard_reward_no = (
+    Keyboard(one_time=False, inline=True)
+    .add(Callback("Ежедневная награда",  payload={"cmd": "reward_no"}), color=KeyboardButtonColor.NEGATIVE)
     .get_json()
 )

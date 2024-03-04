@@ -4,12 +4,14 @@ import logging, re, sqlite3, requests, random, os, json, re, emy, datetime, mysq
 from openai import OpenAI
 from langchain.schema import HumanMessage, SystemMessage
 from langchain.chat_models.gigachat import GigaChat
+from config import *
+from searchTime import timeSity
 
 # Авторизация в сервисе GigaChat
-chat = GigaChat(credentials='MjEwNzY1ZGEtODRlOS00ZDI4LTk4OTQtOTQ3MTlhZDNjOTUxOmEzYzRjOGE0LWY0NjUtNDA0OS1iZWVmLTkyYzNjMDA5OTc4Yg==', verify_ssl_certs=False)
+chat = GigaChat(credentials=key_gigachat, verify_ssl_certs=False)
 
-client = OpenAI(api_key = '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')
-bot = Bot(token='vk1.a.EQU7n_UGB0Y-k2ln0-KuGWmapKyzhNMIkaEDr5azEINL-k-mh2f2kvHagcGRaV2P3PUaSLc_18MkpiE6lcjc2yZnXcIkFSryCqfRDNh6Gi1Zq0KnwKPlIjXAnbt_8Sjfu-eqhCHII5tNeovA7ZwrgHJ469EcR4NDU5ZP0o55sHH53v0W5q2oyvydQkF5QM-pYB28B1XKD2TETSwizPcUKA')
+client = OpenAI(api_key=openai_key)
+bot = Bot(token=api_bot)
 
 conn = con.connect(
     host="8dt.h.filess.io",
@@ -95,17 +97,16 @@ async def update_bd(user_id, peer_id, message):
     else:
         creator = 1
 
-    if result_info is None user_id > 0:
-        cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
-    if result_global is None user_id > 0:
-        cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL)", (user_id,))
-    if result_roulete is None and user_id > 0:
-        cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
-
     if result is None and user_id > 0:
         users_info = await bot.api.users.get(user_id)
         cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, %s, 0, NULL, NULL, 0)", (user_id, f'{users_info[0].first_name} {users_info[0].last_name}', 0))
-    else:
+    elif result_info is None:
+        cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
+    elif result_global is None:
+        cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL)", (user_id,))
+    elif result_roulete is None and user_id > 0:
+        cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
+    elif user_id > 0:
         money = result[4] + 1
         message_count = result[2] + 1
 
@@ -204,7 +205,7 @@ async def info_group(peer_id, message):
             admins.append(f'@id{member_id}({admin_name[0]})')
 
     # Формируем ответ с информацией о создателе и администраторах
-    response = " 👑 СОЗДАТЕЛЬ \n│ └ {}\n│\n├".format(creator) if creator else ""
+    response = " 👑 СОЗДАТЕЛЬ \n│ └ {}\n│\n├".format(creator) if creator else " 👑 СОЗДАТЕЛЬ \n│ └ Не известно\n│\n├"
     response += " 👤 АДМИНЫ \n"
     if admins:
         for admin in admins[:-1]:
@@ -472,7 +473,7 @@ async def active(user_id, peer_id, message, text):
                    msg = f'🔥😱 @id{user_id}({info[1]}) сжег @id{user_id_repli}({receiver[1]}) {res}'
                 elif text == 'продать в рабство':
                    msg = f'💰📢 @id{user_id}({info[1]}) вынес приговор своему рабу @id{user_id_repli}({receiver[1]}), выставив на аукцион'
-                elif text == 'отправить на поля':
+                elif text == 'отправить на поле':
                    msg = f'☠👺 @id{user_id}({info[1]}) избил плеткой @id{user_id_repli}({receiver[1]}), заставив  горбатиться в полях'
                 elif action == 'казнить':
                    msg = f'☠🪓 @id{user_id}({info[1]}) отрубил голову @id{user_id_repli}({receiver[1]}) {res}'
@@ -501,34 +502,48 @@ async def active(user_id, peer_id, message, text):
 @bot.on.raw_event(
     GroupEventType.MESSAGE_EVENT,
     MessageEvent,
-    rules.PayloadRule({"cmd": "daily_reward"}),
+    rules.PayloadRule({"cmd": "reward_yes"}),
 )
 async def hi_handler(event: MessageEvent):
-    cursor.execute('SELECT * FROM users WHERE id = %s', (event.user_id,))
-    result = cursor.fetchone()
-
     a = await bot.api.messages.get_by_conversation_message_id(event.peer_id, conversation_message_ids = event.conversation_message_id)
     text = a.items[0].text
     id_pattern = r'id(\d+)'
     match = re.findall(id_pattern, text)
-    user_id = match
+    user_id, = match
 
-    delta = datetime.timedelta(hours=9, minutes=0)
-    t = (datetime.datetime.now(datetime.timezone.utc) + delta)
-    nowdate = t.strftime("%d.%m.%Y")
-    timeDay = f"{nowdate}"
+    if event.user_id == int(user_id):
+        cursor.execute('SELECT * FROM users WHERE id = %s', (event.user_id,))
+        result = cursor.fetchone()
 
-    if int(user_id) == event.user_id:
-        if result[10] != timeDay:
-            reward_s = random.randint(100,1000)
-            cursor.execute('UPDATE users SET rewardet = %s, money = %s WHERE id = %s', (timeDay, result[4] + reward_s, event.user_id))
-            await bot.api.messages.delete(peer_id=event.peer_id, cmids=event.conversation_message_id, delete_for_all=True, group_id=event.group_id)
-            await event.show_snackbar(f'Награда успешно получена!\nЗачислено {reward_s} котят!')
-        else:
-            await event.show_snackbar('Возвращайтесь завтра!')
+        delta = datetime.timedelta(hours=9, minutes=0)
+        t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+        nowdate = t.strftime("%d.%m.%Y")
+        timeDay = f"{nowdate}"
+
+        reward_s = await revard_lvl(user_id)
+        cursor.execute('UPDATE users SET rewardet = %s, money = %s WHERE id = %s', (timeDay, result[4] + reward_s, user_id))
+        conn.commit()
+        await event.show_snackbar(f'Награда успешно получена!\nЗачислено {reward_s} котят!')
+
     else:
         await event.show_snackbar(await emy.random_msg())
 
+@bot.on.raw_event(
+    GroupEventType.MESSAGE_EVENT,
+    MessageEvent,
+    rules.PayloadRule({"cmd": "reward_no"}),
+)
+async def hi_handler(event: MessageEvent):
+    a = await bot.api.messages.get_by_conversation_message_id(event.peer_id, conversation_message_ids = event.conversation_message_id)
+    text = a.items[0].text
+    id_pattern = r'id(\d+)'
+    match = re.findall(id_pattern, text)
+    user_id, = match
+
+    if event.user_id == int(user_id):
+        await event.show_snackbar('Возвращайтесь завтра!')
+    else:
+        await event.show_snackbar(await emy.random_msg())
 
 @bot.on.raw_event(
     GroupEventType.MESSAGE_EVENT,
@@ -773,30 +788,6 @@ async def hi_handler(event: MessageEvent):
 #
 # Основная часть бота
 #
-
-@bot.on.private_message()
-async def hi_handler(message: Message):
-    user_id = message.from_id
-    peer_id = message.peer_id
-    text = message.text.lower()
-    words = text.split()
-
-    if len(words) > 0 and words[0] == '/reg':
-        if len(words) > 1:
-            passwordnew = words[1]
-            cursor.execute('SELECT password FROM users WHERE id = %s', (user_id,))
-            result = cursor.fetchone()
-            if result[0] is None:
-                cursor.execute(f'UPDATE users SET password = %s WHERE id = %s', (passwordnew, user_id))
-                conn.commit()
-                await message.answer('Регистрация прошла успешно!')
-            else:
-                await message.answer('У вас уже стоит пароль!\nЧто бы сменить напишите "/aut {старый пароль} {новый пароль}"')
-    elif text.startswith('мео '):
-        prompt = text[4:]
-        result = await generate(prompt)
-        await message.reply(result)
-
 @bot.on.chat_message()
 async def hi_handler(message: Message):
     user_id = message.from_id
@@ -809,17 +800,25 @@ async def hi_handler(message: Message):
     text_aup = message.text
 
     if text == 'профиль':
-        if not message.reply_message:
-            cursor.execute('SELECT fraction FROM users WHERE id = %s', (user_id,))
-            frac = cursor.fetchone()[0]
-            attachment = await emy.class_random(frac)
-            await message.answer(await profile(user_id, peer_id), attachment=attachment)
+        if message.reply_message:
+            user_id = message.reply_message.from_id
+        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        frac = result[8]
+        rewardet = result[10]
+
+        delta = datetime.timedelta(hours=9, minutes=0)
+        t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+        nowdate = t.strftime("%d.%m.%Y")
+        timeDay = f"{nowdate}"
+
+        if rewardet != timeDay:
+            keyboards = keyboard.keyboard_reward_yes
         else:
-            user_id_repli = message.reply_message.from_id
-            cursor.execute('SELECT fraction FROM users WHERE id = %s', (user_id_repli,))
-            frac = cursor.fetchone()[0]
-            attachment = await emy.class_random(frac)
-            await message.answer(await profile(user_id_repli, peer_id), attachment=attachment)
+            keyboards = keyboard.keyboard_reward_no
+
+        attachment = await emy.class_random(frac)
+        await message.answer(await profile(user_id, peer_id), attachment=attachment, keyboard=keyboards)
 
     elif text == 'опыт':
         if not message.reply_message:
@@ -833,14 +832,18 @@ async def hi_handler(message: Message):
         result = cursor.fetchone()
         money = result[0]
         influence = result[1]
-        point = int(text[12:])
-        ex =  point * 5
-        if ex > money:
-            await message.answer("Вам не хватает котят!")
+        cats = int(text[12:])  # Получаем количество котят
+        if cats < 5:
+            await message.answer('Количество котят должно быть больше 5!')
         else:
-            cursor.execute('UPDATE users SET influence = %s, money = %s WHERE id = %s', (influence + point, money - ex, user_id))
-            conn.commit()
-            await message.answer(f'Вы купили {point:,.0f} опыта за {ex:,.0f} котят')
+            ex = cats / 5  # Опыт будет равен количеству котят, поделенному на 5
+            if cats > money:
+                await message.answer("У вас недостаточно котят!")
+            else:
+                cursor.execute('UPDATE users SET influence = %s, money = %s WHERE id = %s', (influence + ex, money - cats, user_id))
+                conn.commit()
+                await message.answer(f'Вы приобрели {ex:,.0f} опыта за {cats:,.0f} котят')
+
 
     elif text == 'пися':
         await message.answer(random.choice(emy.random_mes))
@@ -862,22 +865,6 @@ async def hi_handler(message: Message):
 
     elif text == 'начать':
         await message.answer(random.choice(emy.random_comm))
-
-    elif text == '/reward':
-        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
-        result = cursor.fetchone()
-
-        delta = datetime.timedelta(hours=9, minutes=0)
-        t = (datetime.datetime.now(datetime.timezone.utc) + delta)
-        nowdate = t.strftime("%d.%m.%Y")
-        timeDay = f"{nowdate}"
-
-        if result[10] != timeDay or user_id == 604366930 or user_id == 538065341:
-            reward_s = await revard_lvl(user_id)
-            cursor.execute('UPDATE users SET rewardet = %s, money = %s WHERE id = %s', (timeDay, result[4] + reward_s, user_id))
-            await message.answer(f'Награда успешно получена!\nЗачислено {reward_s} котят!')
-        else:
-            await message.answer('Возвращайтесь завтра!')
 
     elif text == 'беседа':
         await message.answer(await info_group(peer_id, message))
@@ -1334,6 +1321,10 @@ async def hi_handler(message: Message):
             user_id = message.from_id
         reply_text = f"Идентификатор пользователя: {user_id}"
         await message.answer(reply_text)
+
+    elif len(words) > 0 and words[0] == 'время':
+        sity_name = words[1]
+        await message.reply(await timeSity(sity_name))
 
     elif text == '/dr':
         # Проверяем, есть ли ответ на сообщение
