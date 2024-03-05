@@ -4,6 +4,10 @@ from collections import defaultdict
 
 text_random = ["Зачем тебе это?", "Иди займись чем нибудь полезным!", "Лучше не делай этого..", "Иди помурчи", "Щас злая утка за жопу укусит.", "Щас бан на 2 года получишь :)", "Ты пожилеешь!"]
 
+next_level_points = [2500, 5000, 10000, 25000, 50000, 100000, 200000, 400000, 700000]
+
+next_level_points_group = [5000, 10000, 20000, 50000, 75000, 100000]
+
 async def random_msg():
     random_message = random.choice(text_random)
     return random_message
@@ -24,8 +28,6 @@ async def parse_number(text):
     return text
 
 async def influence_lvl(point):
-    next_level_points = [2500, 5000, 10000, 25000, 50000, 100000, 200000, 400000, 700000]
-
     for i, points in enumerate(next_level_points):
         if point < points:
             return i + 1

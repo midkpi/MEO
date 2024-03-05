@@ -134,6 +134,15 @@ async def top_msg(user_id, peer_id):
         result = '🚫 Пока что нет активных пользователей 🚫'
     return result
 
+async def all_msg(peer_id):
+    cursor.execute('SELECT SUM(message_count) FROM group_%s WHERE id > 0', (peer_id,))
+    total_messages = cursor.fetchone()[0]
+    if total_messages:
+        response = f'{total_messages:,}'
+    else:
+        response = '0'
+    return response
+
 async def top_cats(peer_id):
     cursor.execute('''
         SELECT u.id, u.money
@@ -240,6 +249,7 @@ async def info_group(peer_id, message):
     info += f'│ ├ ИИ модуль: {ii_status}\n'
     info += f'│ ├ Хентай модуль: {hentai_status}\n'
     info += f'│ ├ Активный: {top_msg}\n'
+    info += f'│ ├ Сообщения: {await all_msg(peer_id)}\n'
     info += f'│ └ Онлайн: {online_count}\n│\n├'
     info += response
     info += '└'
@@ -313,7 +323,7 @@ async def influence_stat(user_id):
     result = cursor.fetchone()
 
     influence = result[12]
-    next_level_points = [2500, 5000, 10000, 25000, 50000, 100000, 200000, 400000, 700000]
+    next_level_points = emy.next_level_points
     level = await emy.influence_lvl(influence)
 
     if level < len(next_level_points):
@@ -509,7 +519,7 @@ async def hi_handler(event: MessageEvent):
     text = a.items[0].text
     id_pattern = r'id(\d+)'
     match = re.findall(id_pattern, text)
-    user_id, = match
+    user_id = match[0]
 
     if event.user_id == int(user_id):
         cursor.execute('SELECT * FROM users WHERE id = %s', (event.user_id,))
@@ -541,7 +551,7 @@ async def hi_handler(event: MessageEvent):
     text = a.items[0].text
     id_pattern = r'id(\d+)'
     match = re.findall(id_pattern, text)
-    user_id, = match
+    user_id = match[0]
 
     if event.user_id == int(user_id):
         await event.show_snackbar('Возвращайтесь завтра!')
