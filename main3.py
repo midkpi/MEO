@@ -864,7 +864,7 @@ async def hi_handler(message: Message):
             keyboards = keyboard.keyboard_reward_no
 
         attachment = await emy.class_random(frac)
-        await message.answer(await profile(user_id, peer_id), attachment=attachment, keyboard=keyboards)
+        await message.answer(await profile(user_id, peer_id), attachment=attachment, keyboard=keyboards, disable_mentions=1)
 
     elif text == 'опыт':
         if not message.reply_message:
@@ -1232,15 +1232,15 @@ async def hi_handler(message: Message):
 
     elif text == 'топ актив':
         msg = await top_msg(user_id, peer_id)
-        await message.answer(msg)
+        await message.answer(msg, disable_mentions=1)
 
     elif text == 'браки':
         msg = await braki(user_id, peer_id)
-        await message.answer(msg)
+        await message.answer(msg, disable_mentions=1)
 
     elif text == 'топ котят':
         msg = await top_cats(peer_id)
-        await message.answer(msg)
+        await message.answer(msg, disable_mentions=1)
 
     elif text == '/henton':
         if user_id == 604366930 or user_id == 538065341:
