@@ -1,5 +1,5 @@
 from vkbottle.bot import Bot, Message, MessageEvent, rules
-from vkbottle import PhotoMessageUploader, DocMessagesUploader, KeyboardButtonColor, Text, GroupEventType, GroupTypes
+from vkbottle import PhotoMessageUploader, DocMessagesUploader, KeyboardButtonColor, Text, GroupEventType, GroupTypes, VKAPIError
 import logging, re, sqlite3, requests, random, os, json, re, emy, datetime, mysql.connector as con, keyboard, dual, time, asyncio
 from openai import OpenAI
 from langchain.schema import HumanMessage, SystemMessage
@@ -30,6 +30,14 @@ logging.getLogger('vkbottle').setLevel(logging.ERROR)
 photo_uploader = PhotoMessageUploader(bot.api)
 doc_uploader = DocMessagesUploader(bot.api)
 
+async def get_chat_name(peer_id):
+    try:
+        conversation = await bot.api.messages.get_conversations_by_id(peer_ids=peer_id)
+        chat_title = conversation.items[0].chat_settings.title
+        return chat_title
+    except VKAPIError as e:
+        print(f"An error occurred: {e}")
+        return None
 
 async def generate(text):
     response = client.chat.completions.create(
@@ -129,6 +137,7 @@ async def top_msg(user_id, peer_id):
             else:
                 name = 'Не известно'
             response += f'{i}. @id{user_id}({name}) - {message_count:,}\n'
+        response += f'\nВсего сообщений: {await all_msg(peer_id)}'
         result = response
     else:
         result = '🚫 Пока что нет активных пользователей 🚫'
@@ -142,6 +151,32 @@ async def all_msg(peer_id):
     else:
         response = '0'
     return response
+
+async def all_cats(peer_id):
+    cursor.execute('''
+        SELECT SUM(money)
+        FROM users
+        WHERE id IN (SELECT id FROM group_%s WHERE id > 0)
+    ''', (peer_id,))
+
+    total_money = cursor.fetchone()[0]
+    if total_money:
+        response = f'{total_money:,}'
+    else:
+        response = '0'
+    return response
+
+async def statistic_bd():
+    cursor.execute("SELECT COUNT(*) FROM users")
+    count_users = cursor.fetchone()[0]
+
+    cursor.execute("SELECT COUNT(*) FROM groups")
+    count_groups = cursor.fetchone()[0]
+
+    result = '⚙️ База данных:\n'
+    result += f"├ Всего пользователей: {count_users}\n"
+    result += f"└ Всего бесед: {count_groups}"
+    return result
 
 async def top_cats(peer_id):
     cursor.execute('''
@@ -157,6 +192,7 @@ async def top_cats(peer_id):
             cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
             name = cursor.fetchone()[0]
             response += f'{i}. @id{user_id}({name}) - {money:,}\n'
+        response += f'\nВсего котят: {await all_cats(peer_id)}'
         result = response
     else:
         result = '🚫 Пока что нет активных котят 🚫'
@@ -189,10 +225,6 @@ async def info_group(peer_id, message):
     # Получаем информацию о беседе из базы данных
     cursor.execute("SELECT * FROM groups WHERE id = %s", (peer_id,))
     result_info = cursor.fetchone()
-
-    # Получаем информацию о беседе через API
-    conversation = await bot.api.messages.get_conversations_by_id(peer_ids=peer_id)
-    conversation_title = conversation.items[0].chat_settings.title
 
     # Получаем список участников беседы из базы данных
     cursor.execute(f"SELECT id, rank FROM group_{peer_id} WHERE rank IN (2, 3)")
@@ -244,12 +276,13 @@ async def info_group(peer_id, message):
     hent = result_info[3]
     hentai_status = 'Активен' if ii >= 1 else 'Не активен'
 
-    info = f'👑 {conversation_title}\n'
+    info = f'👑 {await get_chat_name(peer_id)}\n'
     info += f'├ ⭐ СТАТИСТИКА\n'
     info += f'│ ├ ИИ модуль: {ii_status}\n'
     info += f'│ ├ Хентай модуль: {hentai_status}\n'
     info += f'│ ├ Активный: {top_msg}\n'
-    info += f'│ ├ Сообщения: {await all_msg(peer_id)}\n'
+    info += f'│ ├ Всего сообщений: {await all_msg(peer_id)}\n'
+    info += f'│ ├ Всего котят: {await all_cats(peer_id)}\n'
     info += f'│ └ Онлайн: {online_count}\n│\n├'
     info += response
     info += '└'
@@ -879,6 +912,9 @@ async def hi_handler(message: Message):
     elif text == 'начать':
         await message.answer(random.choice(emy.random_comm))
 
+    elif text == '/infobd':
+        await message.answer(await statistic_bd())
+
     elif text == '/reward':
         cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
         result = cursor.fetchone()
@@ -1102,21 +1138,31 @@ async def hi_handler(message: Message):
         conn.commit()
         await message.answer(f'@id{user_id}({user_name}), теперь ты @id{user_id}({names})!')
 
-    elif len(words) > 0 and words[0] == '/kick':
+    elif len(words) > 0 and words[0] in ['/kick', 'kick', '/кик', 'кик', 'бан']:
         cursor.execute(f'SELECT * FROM group_{peer_id} WHERE id = %s', (user_id,))
         result = cursor.fetchone()
         rank = result[3]
-        if rank >= 3 or user_id == 604366930 or user_id == 538065341:
+        if rank >= 2 or user_id == 604366930 or user_id == 538065341:
             if message.reply_message:
-                user_id_repli = message.reply_message.from_id
-                await kick_user(peer_id, user_id_repli)
+                user_id_reply = message.reply_message.from_id
+                reason = ' '.join(words[1:])  # Соединяем все слова после команды в строку - причину бана
+                await kick_user(peer_id, user_id_reply)
+                await message.answer(f'Пользователь @id{user_id_repli} был исключен по причине: {reason}')
             else:
-                user_id_match = re.search(r'\[id(\d+)\|@[^\]]+\]', words[1])
-                opponent_id = user_id_match.group(1)
-                if user_id_match:
-                    await kick_user(peer_id, opponent_id)
+                if len(words) >= 2:  # Проверяем, есть ли второе слово после команды (id пользователя)
+                    user_id_match = re.search(r'\[id(\d+)\|@[^\]]+\]', words[1])
+                    if user_id_match:
+                        opponent_id = user_id_match.group(1)
+                        reason = ' '.join(words[2:])  # Соединяем все слова после id пользователя в строку - причину бана
+                        await kick_user(peer_id, opponent_id)
+                        await message.answer(f'Пользователь @id{opponent_id} был исключен по причине: {reason}')
+                    else:
+                        await message.answer('Неправильный формат id пользователя!')
+                else:
+                    await message.answer('Не указан id пользователя!')
         else:
             await message.answer('Команда доступна только админам!')
+
 
     elif text == 'этти':
         await message.answer(attachment=random.choice(emy.random_png_etty), keyboard=keyboard.keyboard_atty)
