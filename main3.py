@@ -339,17 +339,17 @@ async def revard_lvl(user_id):
     elif lvl == 4:
         return random.randint(200,1600)
     elif lvl == 5:
-        return random.randint(250,3200)
+        return random.randint(250,1800)
     elif lvl == 6:
-        return random.randint(300,6400)
+        return random.randint(300,2000)
     elif lvl == 7:
-        return random.randint(350,12800)
+        return random.randint(350,2200)
     elif lvl == 8:
-        return random.randint(400,23600)
+        return random.randint(400,2400)
     elif lvl == 9:
-        return random.randint(450,47200)
+        return random.randint(450,2600)
     elif lvl == 10:
-        return random.randint(500,94400)
+        return random.randint(500,3000)
 
 async def influence_stat(user_id):
     cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
@@ -482,12 +482,20 @@ async def active(user_id, peer_id, message, text):
                     msg = f'💏 @id{user_id}({info[1]}) чмокнул @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'ударить':
                     msg = f'👊😵 @id{user_id}({info[1]}) ударил @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'уебать':
+                    msg = f'👊😵 @id{user_id}({info[1]}) уебал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'набухаться':
                     msg = f'😵🍻😵 @id{user_id}({info[1]}) набухался с @id{user_id_repli}({receiver[1]}), после чего один из  них признался влюбви @jd7ex4a4s1(телке)'
                 elif action == 'укусить':
                     msg = f'😈 @id{user_id}({info[1]}) игриво укусил @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'кусь':
+                    msg = f'😈 @id{user_id}({info[1]}) игриво кусьнул @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'зарезать':
+                    msg = f'😈🔪 @id{user_id}({info[1]}) скрытно зарезал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'погладить':
                     msg = f'👐😊 @id{user_id}({info[1]}) нежно погладил @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'утопить':
+                    msg = f'👐🌊 @id{user_id}({info[1]}) утопил @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'отшлепать':
                    msg = f'🖐️😳 @id{user_id}({info[1]}) неожиданно отшлепал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'отшлёпать':
@@ -506,6 +514,18 @@ async def active(user_id, peer_id, message, text):
                    msg = f'👻😱 @id{user_id}({info[1]}) испугал @id{user_id_repli}({receiver[1]}), заставив его сердце забиться чуть ли до инфаркта 🙀'
                 elif action == 'переспать':
                    msg = f'🛏️😏 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) провери ночь вместе не отпуская друг-друга {res}'
+                elif action == 'смотреть фильм':
+                   msg = f'🎥🍿 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе посмотрели интересный фильм'
+                elif action == 'искупаться':
+                    msg = f'🫧💦 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе искупались'
+                elif action == 'погулять':
+                    msg = f'🏞✨ @id{user_id}({info[1]}) погулял вместе с @id{user_id_repli}({receiver[1]})'
+                elif action == 'фейерверк ':
+                    msg = f'🎇💥 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе посмотрели на фейерверки'
+                elif action == 'посмотреть на закат':
+                    msg = f'🌅🌆 @id{user_id}({info[1]}) встретил закат с @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'посмотреть на восход':
+                    msg = f'🌄🌇 @id{user_id}({info[1]}) встретил восход с @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'украсть':
                    msg = f'🛏️😏 @id{user_id}({info[1]}) усыпил и украл @id{user_id_repli}({receiver[1]}) ...\n @id{user_id_repli}({receiver[1]}) , рекомендуем проверить Тест на беременность... У Похителя давно не было секса...'
                 elif action == 'пнуть':
@@ -516,7 +536,7 @@ async def active(user_id, peer_id, message, text):
                    msg = f'🔥😱 @id{user_id}({info[1]}) сжег @id{user_id_repli}({receiver[1]}) {res}'
                 elif text == 'продать в рабство':
                    msg = f'💰📢 @id{user_id}({info[1]}) вынес приговор своему рабу @id{user_id_repli}({receiver[1]}), выставив на аукцион'
-                elif text == 'отправить на поле':
+                elif text == 'отправить на поля':
                    msg = f'☠👺 @id{user_id}({info[1]}) избил плеткой @id{user_id_repli}({receiver[1]}), заставив  горбатиться в полях'
                 elif action == 'казнить':
                    msg = f'☠🪓 @id{user_id}({info[1]}) отрубил голову @id{user_id_repli}({receiver[1]}) {res}'
@@ -528,7 +548,11 @@ async def active(user_id, peer_id, message, text):
                         msg = f'🍑😛 @id{user_id}({info[1]}) села на @id{user_id_repli}({receiver[1]})'
                     elif action == 'отсосать':
                         msg = f'🍌👄 @id{user_id}({info[1]}) отсосала у @id{user_id_repli}({receiver[1]}) {res}'
+                    elif action == 'минет':
+                        msg = f'🍌👄 @id{user_id}({info[1]}) отсосала у @id{user_id_repli}({receiver[1]}) {res}'
                     elif action == 'отлизать':
+                        msg = f'😛🍑 @id{user_id}({info[1]}) отлизал у @id{user_id_repli}({receiver[1]}) {res}'
+                    elif action == 'куни':
                         msg = f'😛🍑 @id{user_id}({info[1]}) отлизал у @id{user_id_repli}({receiver[1]}) {res}'
                     elif action == 'трахнуть':
                         msg = f'🍌🍑🥵 @id{user_id}({info[1]}) вместе занялись сексом @id{user_id_repli}({receiver[1]}) {res}'
