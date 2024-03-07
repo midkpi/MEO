@@ -520,7 +520,7 @@ async def active(user_id, peer_id, message, text):
                     msg = f'🫧💦 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе искупались'
                 elif action == 'погулять':
                     msg = f'🏞✨ @id{user_id}({info[1]}) погулял вместе с @id{user_id_repli}({receiver[1]})'
-                elif action == 'фейерверк ':
+                elif action == 'посмотреть на фейерверк':
                     msg = f'🎇💥 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе посмотрели на фейерверки'
                 elif action == 'посмотреть на закат':
                     msg = f'🌅🌆 @id{user_id}({info[1]}) встретил закат с @id{user_id_repli}({receiver[1]}) {res}'
