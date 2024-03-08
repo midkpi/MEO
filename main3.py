@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from vkbottle.bot import Bot, Message, MessageEvent, rules
 from vkbottle import PhotoMessageUploader, DocMessagesUploader, KeyboardButtonColor, Text, GroupEventType, GroupTypes, VKAPIError
 import logging, re, sqlite3, requests, random, os, json, re, emy, datetime, mysql.connector as con, keyboard, dual, time, asyncio
@@ -9,15 +10,15 @@ from searchTime import timeSity
 
 # Авторизация в сервисе GigaChat
 chat = GigaChat(credentials=key_gigachat, verify_ssl_certs=False)
+bot = Bot(token=api_bot)
 
 client = OpenAI(api_key=openai_key)
-bot = Bot(token=api_bot)
 
 conn = con.connect(
     host="8dt.h.filess.io",
     database="meo_gocorrect",
     port="3306",
-    username="meo_gocorrect",
+    user="meo_gocorrect",
     password="89292007a"
 )
 cursor = conn.cursor()
@@ -520,12 +521,12 @@ async def active(user_id, peer_id, message, text):
                     msg = f'🫧💦 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе искупались'
                 elif action == 'погулять':
                     msg = f'🏞✨ @id{user_id}({info[1]}) погулял вместе с @id{user_id_repli}({receiver[1]})'
-                elif action == 'посмотреть на фейерверк':
+                elif text == 'посмотреть на фейерверк':
                     msg = f'🎇💥 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе посмотрели на фейерверки'
-                elif action == 'посмотреть на закат':
-                    msg = f'🌅🌆 @id{user_id}({info[1]}) встретил закат с @id{user_id_repli}({receiver[1]}) {res}'
-                elif action == 'посмотреть на восход':
-                    msg = f'🌄🌇 @id{user_id}({info[1]}) встретил восход с @id{user_id_repli}({receiver[1]}) {res}'
+                elif text == 'посмотреть на закат':
+                    msg = f'🌅🌆 @id{user_id}({info[1]}) встретил закат с @id{user_id_repli}({receiver[1]})'
+                elif text == 'посмотреть на восход':
+                    msg = f'🌄🌇 @id{user_id}({info[1]}) встретил восход с @id{user_id_repli}({receiver[1]})'
                 elif action == 'украсть':
                    msg = f'🛏️😏 @id{user_id}({info[1]}) усыпил и украл @id{user_id_repli}({receiver[1]}) ...\n @id{user_id_repli}({receiver[1]}) , рекомендуем проверить Тест на беременность... У Похителя давно не было секса...'
                 elif action == 'пнуть':
@@ -961,12 +962,14 @@ async def hi_handler(message: Message):
     elif text == 'сила':
         await message.answer(await statistic_luck(user_id), attachment=random.choice(emy.random_png_power))
 
-    elif text == 'котята' and not message.reply_message:
+    elif text == 'котята':
+        if message.reply_message:
+            user_id = message.reply_message.from_id
         cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
         result = cursor.fetchone()
         money = result[4]
         user_name = result[1]
-        await message.answer(f'@id{user_id}({user_name}), у тебя {money:,.0f} котят!')
+        await message.answer(f'😺 @id{user_id}({user_name})\n└ Котята: {money:,.0f}')
 
     elif len(words) > 0 and words[0] == '!роль' and message.reply_message:
         cursor.execute(f'SELECT * FROM group_{peer_id} WHERE id = %s', (user_id,))
@@ -1126,7 +1129,13 @@ async def hi_handler(message: Message):
                 else:
                     user_name = user[1]
                     partner_name = partner[1]
-                    await message.answer(f'💌 Уважаемый @id{id_repli} ({partner_name}), вас просят принять важное решение.\n\n@id{user_id} ({user_name}) сделал(а) вам  предложение о браке.\n\nПримите или отклоните это предложение.', keyboard=keyboard.keyboard_brak, attachment=random.choice(emy.random_marriage_start))
+                    await message.answer(
+                        f'💌 Подана заявка в брак!\n'
+                        f'├ Получил(а): @id{id_repli} ({partner_name})\n'
+                        f'└ Подал: @id{user_id} ({user_name})',
+                        keyboard=keyboard.keyboard_brak, 
+                        attachment=random.choice(emy.random_marriage_start)
+                    )
         else:
             if not message.reply_message:
                 await message.answer(await brak_chek(user_id, peer_id))
@@ -1208,15 +1217,6 @@ async def hi_handler(message: Message):
 
     elif text == 'тентакли':
         await message.answer(attachment=random.choice(emy.random_png_tentacles), keyboard=keyboard.keyboard_tentacles)
-
-    elif text == 'котята' and message.reply_message:
-        replied_message = message.reply_message
-        user_id_repli = replied_message.from_id
-        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id_repli,))
-        result = cursor.fetchone()
-        money = result[4]
-        user_name = result[1]
-        await message.answer(f'@id{user_id_repli}({user_name}), у тебя {money:,.0f} котят!')
 
     elif len(words) > 0 and words[0] == 'приют':
         cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
