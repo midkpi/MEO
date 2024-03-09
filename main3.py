@@ -7,6 +7,7 @@ from langchain.schema import HumanMessage, SystemMessage
 from langchain.chat_models.gigachat import GigaChat
 from config import *
 from searchTime import timeSity
+from bosses import *
 
 # Авторизация в сервисе GigaChat
 chat = GigaChat(credentials=key_gigachat, verify_ssl_certs=False)
@@ -87,7 +88,7 @@ async def kick_user(peer_id: int, user_id: int):
     except Exception as e:
         print(f"Ошибка при кике пользователя: {e}")
 
-async def update_bd(user_id, peer_id, message):
+async def createdata(user_id, peer_id, message):
     cursor.execute(f'CREATE TABLE IF NOT EXISTS group_{peer_id} (`id` INTEGER PRIMARY KEY, `message_count` INTEGER NOT NULL, `partner_id` INTEGER, `rank` INTEGER NOT NULL, `partner_time` TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS `groups` (`id` INTEGER PRIMARY KEY, `hello_msg` TEXT, `ii` INTEGER, hent INTEGER)')
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
@@ -99,7 +100,7 @@ async def update_bd(user_id, peer_id, message):
     cursor.execute("SELECT * FROM groups WHERE id = %s", (peer_id,))
     result_info = cursor.fetchone()
 
-    conversation_info = await bot.api.messages.get_conversations_by_id(peer_ids=message.peer_id)
+    conversation_info = await bot.api.messages.get_conversations_by_id(peer_ids=peer_id)
     creator_id = conversation_info.items[0].chat_settings.owner_id
     if creator_id == message.from_id:
         creator = 3
@@ -115,15 +116,25 @@ async def update_bd(user_id, peer_id, message):
         cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL)", (user_id,))
     elif result_roulete is None and user_id > 0:
         cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
-    elif user_id > 0:
-        money = result[4] + 1
-        message_count = result[2] + 1
 
-        message_count_global = result_global[1] + 1
-        cursor.execute(f'UPDATE group_{peer_id} SET message_count = %s WHERE id = %s', (message_count_global, user_id))
-        cursor.execute('UPDATE users SET message_count = %s WHERE id = %s', (message_count, user_id))
-        cursor.execute('UPDATE users SET money = %s WHERE id = %s', (money, user_id))
-    conn.commit()
+async def update_bd(user_id, peer_id, message):
+    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    result = cursor.fetchone()
+    cursor.execute(f"SELECT * FROM group_{peer_id} WHERE id = %s", (user_id,))
+    result_global = cursor.fetchone()
+    while True:
+        try:
+            if user_id > 0:
+                money = result[4] + 1
+                message_count = result[2] + 1
+
+                message_count_global = result_global[1] + 1
+                cursor.execute(f'UPDATE group_{peer_id} SET message_count = %s WHERE id = %s', (message_count_global, user_id))
+                cursor.execute('UPDATE users SET message_count = %s WHERE id = %s', (message_count, user_id))
+                cursor.execute('UPDATE users SET money = %s WHERE id = %s', (money, user_id))
+            conn.commit()
+        except Exception as e:
+                await createdata(user_id, peer_id, message)
 
 async def top_msg(user_id, peer_id):
     cursor.execute('SELECT id, message_count FROM group_%s WHERE id > 0 ORDER BY message_count DESC LIMIT 25', (peer_id,))
@@ -289,7 +300,6 @@ async def info_group(peer_id, message):
     info += '└'
 
     return info
-
 
 async def profile(user_id, peer_id):
     cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
@@ -515,7 +525,7 @@ async def active(user_id, peer_id, message, text):
                    msg = f'👻😱 @id{user_id}({info[1]}) испугал @id{user_id_repli}({receiver[1]}), заставив его сердце забиться чуть ли до инфаркта 🙀'
                 elif action == 'переспать':
                    msg = f'🛏️😏 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) провери ночь вместе не отпуская друг-друга {res}'
-                elif action == 'смотреть фильм':
+                elif text == 'смотреть фильм':
                    msg = f'🎥🍿 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе посмотрели интересный фильм'
                 elif action == 'искупаться':
                     msg = f'🫧💦 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе искупались'
@@ -531,8 +541,8 @@ async def active(user_id, peer_id, message, text):
                    msg = f'🛏️😏 @id{user_id}({info[1]}) усыпил и украл @id{user_id_repli}({receiver[1]}) ...\n @id{user_id_repli}({receiver[1]}) , рекомендуем проверить Тест на беременность... У Похителя давно не было секса...'
                 elif action == 'пнуть':
                    msg = f'🦶😵@id{user_id}({info[1]}) пнул @id{user_id_repli}({receiver[1]}) {res}'
-                elif text == 'уебать об стену':
-                   msg = f'🖐️😵@id{user_id}({info[1]}) уебал @id{user_id_repli}({receiver[1]}) об стену'
+                elif text == 'кинуть об стену':
+                   msg = f'🖐️😵@id{user_id}({info[1]}) кинул @id{user_id_repli}({receiver[1]}) об стену'
                 elif action == 'сжечь':
                    msg = f'🔥😱 @id{user_id}({info[1]}) сжег @id{user_id_repli}({receiver[1]}) {res}'
                 elif text == 'продать в рабство':
@@ -856,6 +866,33 @@ async def hi_handler(event: MessageEvent):
                 peer_id=event.peer_id, message=f'💔 К сожалению...\n@id{partner_id} ({partner_name}), к которому вы испытывали теплые чувства, решил отказаться от вашего предложения! 😔💔', random_id=0, attachment=random.choice(emy.random_marriage_rejection)
             )
 
+async def repling_messge(message):
+    # Выполняем запрос
+    cursor.execute("SELECT id FROM groups")
+
+    # Получаем результаты
+    results = cursor.fetchall()
+    for result in results:
+        try:
+            await bot.api.messages.send(
+                peer_id=result[0], message=f'Идет проверка рассылки!(На этот раз последняя)', random_id=0
+            )
+        except Exception as e:
+            print(f'Ошибка при отправке сообщения: {e}')
+            # Удаляем запись из базы данных
+            cursor.execute("DELETE FROM groups WHERE id = %s", (result[0],))
+            conn.commit()
+
+async def sendRandomStick(peer_id):
+    while True:
+        try:
+            stick = random.randint(1,98894)
+            await bot.api.messages.send(peer_id=peer_id, sticker_id=stick, random_id=0)
+            break
+        except Exception as e:
+            continue
+
+
 #
 # Основная часть бота
 #
@@ -865,6 +902,8 @@ async def hi_handler(message: Message):
     peer_id = message.peer_id
     text = message.text.lower()
     words = text.split()
+
+    await createdata(user_id, peer_id, message)
 
     await active(user_id, message.peer_id, message, text)
 
@@ -891,6 +930,25 @@ async def hi_handler(message: Message):
         attachment = await emy.class_random(frac)
         await message.answer(await profile(user_id, peer_id), attachment=attachment, keyboard=keyboards, disable_mentions=1)
 
+    elif text == '%*#@$%&#*@%&#(%&#(%))':
+        boss = bosses['1']
+        hp_boss = boss['hp']
+        name_boss = boss['name']
+        photo_boss = boss['photo']
+
+        await message.answer(
+            '👾 БОСС\n'
+            f'├ Имя: {name_boss}\n'
+            f'└ Здоровье: {hp_boss:,.0f}\n',
+            attachment=photo_boss
+            )
+
+    elif text == '%(#%#^(%#@^%@#%^%))':
+        await repling_messge(message)
+
+    elif text == 'стик':
+        await sendRandomStick(peer_id)
+
     elif text == 'опыт':
         if not message.reply_message:
             await message.answer(await influence_stat(user_id))
@@ -914,7 +972,6 @@ async def hi_handler(message: Message):
                 cursor.execute('UPDATE users SET influence = %s, money = %s WHERE id = %s', (influence + ex, money - cats, user_id))
                 conn.commit()
                 await message.answer(f'Вы приобрели {ex:,.0f} опыта за {cats:,.0f} котят')
-
 
     elif text == 'пися':
         await message.answer(random.choice(emy.random_mes))
@@ -1040,7 +1097,7 @@ async def hi_handler(message: Message):
                         else:
                             # Check if the user has enough money for the bet
                             if opponent_money < money:
-                                await message.answer(f'❗️| У @id{opponent_id}({opponent_name}) недостаточно денег для участия в дуэли')
+                                await message.answer(f'❗️| У @id{opponent_id}({opponent_name}) недостаточно котят!')
                             else:
                                 await message.answer(f"Игрок @id{user_id}({user_name}) бросает вызов @id{opponent_id}({opponent_name})!\n\nСтавка дуэли: {money}", keyboard=keyboard.keyboard_dyal, attachment=random.choice(emy.random_dyal_start))
                     else:
@@ -1051,11 +1108,11 @@ async def hi_handler(message: Message):
                         else:
                             # Check if the user has enough money for the bet
                             if money < stavka:
-                                await message.answer('❗️| У вас недостаточно денег для участия в дуэли')
+                                await message.answer('❗️| У вас недостаточно котят!')
                             elif opponent_money < stavka:
-                                await message.answer(f'❗️| У {opponent_name} недостаточно денег для участия в дуэли')
-                            elif stavka <= 0:
-                                await message.answer(f'❗️| @id{user_id} ({user_name}) ставка не может быть минусовой или нулевой!')
+                                await message.answer(f'❗️| У {opponent_name} недостаточно котят!')
+                            elif stavka < 100:
+                                await message.answer(f'❗️| @id{user_id} ({user_name}) минимальная ставка 100 котят!!')
                             else:
                                 await message.answer(f"Игрок @id{user_id}({user_name}) бросает вызов @id{opponent_id}({opponent_name})!\n\nСтавка дуэли: {stavka}", keyboard=keyboard.keyboard_dyal, attachment=random.choice(emy.random_dyal_start))
 
@@ -1077,7 +1134,7 @@ async def hi_handler(message: Message):
                         else:
                             # Check if the user has enough money for the bet
                             if opponent_money < money:
-                                await message.answer(f'❗️| У @id{opponent_id}({opponent_name}) недостаточно денег для участия в дуэли т.к он бомж 🍾🏚💸 иди на трассе работай шлюха 😋🍼')
+                                await message.answer(f'❗️| У @id{opponent_id}({opponent_name}) недостаточно котят!')
                             else:
                                 await message.answer(f"Игрок @id{user_id}({user_name}) бросает вызов @id{opponent_id}({opponent_name})!\n\nСтавка дуэли: {money}", keyboard=keyboard.keyboard_dyal, attachment=random.choice(emy.random_dyal_start))
                     else:
@@ -1091,7 +1148,7 @@ async def hi_handler(message: Message):
                             if money < stavka:
                                 await message.answer('❗️| У вас недостаточно денег для участия в дуэли')
                             elif opponent_money < stavka:
-                                await message.answer(f'❗️| У {opponent_name} недостаточно денег для участия в дуэли т.к он бомж 🍾🏚💸 иди на трассе работай шлюха 😋🍼')
+                                await message.answer(f'❗️| У {opponent_name} недостаточно котят!')
                             elif stavka <= 0:
                                 await message.answer(f'❗️| @id{user_id} ({user_name}) ставка не может быть минусовой или нулевой!')
                             else:
