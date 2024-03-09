@@ -133,6 +133,7 @@ async def update_bd(user_id, peer_id, message):
                 cursor.execute('UPDATE users SET message_count = %s WHERE id = %s', (message_count, user_id))
                 cursor.execute('UPDATE users SET money = %s WHERE id = %s', (money, user_id))
             conn.commit()
+            return
         except Exception as e:
                 await createdata(user_id, peer_id, message)
 
