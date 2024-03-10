@@ -122,20 +122,18 @@ async def update_bd(user_id, peer_id, message):
     result = cursor.fetchone()
     cursor.execute(f"SELECT * FROM group_{peer_id} WHERE id = %s", (user_id,))
     result_global = cursor.fetchone()
-    while True:
-        try:
-            if user_id > 0:
-                money = result[4] + 1
-                message_count = result[2] + 1
-
-                message_count_global = result_global[1] + 1
-                cursor.execute(f'UPDATE group_{peer_id} SET message_count = %s WHERE id = %s', (message_count_global, user_id))
-                cursor.execute('UPDATE users SET message_count = %s WHERE id = %s', (message_count, user_id))
-                cursor.execute('UPDATE users SET money = %s WHERE id = %s', (money, user_id))
-            conn.commit()
-            return
-        except Exception as e:
-                await createdata(user_id, peer_id, message)
+    try:
+        if user_id > 0:
+            money = result[4] + 1
+            message_count = result[2] + 1
+            message_count_global = result_global[1] + 1
+            cursor.execute(f'UPDATE group_{peer_id} SET message_count = %s WHERE id = %s', (message_count_global, user_id))
+            cursor.execute('UPDATE users SET message_count = %s WHERE id = %s', (message_count, user_id))
+            cursor.execute('UPDATE users SET money = %s WHERE id = %s', (money, user_id))            
+        conn.commit()
+        return
+    except Exception as e:
+            await createdata(user_id, peer_id, message)
 
 async def top_msg(user_id, peer_id):
     cursor.execute('SELECT id, message_count FROM group_%s WHERE id > 0 ORDER BY message_count DESC LIMIT 25', (peer_id,))
@@ -150,13 +148,69 @@ async def top_msg(user_id, peer_id):
             else:
                 name = 'Не известно'
             response += f'{i}. @id{user_id}({name}) - {message_count:,}\n'
-        response += f'\nВсего сообщений: {await all_msg(peer_id)}'
+        response += f'\nВсего сообщений: {await all_msg_group(peer_id)}'
         result = response
     else:
         result = '🚫 Пока что нет активных пользователей 🚫'
     return result
 
-async def all_msg(peer_id):
+async def top_msg_global():
+    cursor.execute('SELECT id, message_count FROM users WHERE id > 0 ORDER BY message_count DESC LIMIT 10')
+    top_users = cursor.fetchall()
+    if top_users:
+        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ УЧАСТНИКОВ ПО СООБЩЕНИЯМ:\n\n'
+        for i, (user_id, message_count) in enumerate(top_users, start=1):
+            cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
+            name = cursor.fetchone()
+            if name:
+                name = name[0]
+            else:
+                name = 'Не известно'
+            response += f'{i}. @id{user_id}({name}) - {message_count:,}\n'
+        response += f'\nВсего сообщений: {await all_msg()}'
+        result = response
+    else:
+        result = '🚫 Пока что нет активных пользователей 🚫'
+    return result
+
+async def top_cats_global():
+    cursor.execute('SELECT id, money FROM users WHERE id > 0 ORDER BY money DESC LIMIT 10')
+    top_users = cursor.fetchall()
+    if top_users:
+        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ УЧАСТНИКОВ ПО КОТЯТАМ:\n\n'
+        for i, (user_id, money) in enumerate(top_users, start=1):
+            cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
+            name = cursor.fetchone()
+            if name:
+                name = name[0]
+            else:
+                name = 'Не известно'
+            response += f'{i}. @id{user_id}({name}) - {money:,}\n'
+        response += f'\nВсего сообщений: {await all_msg()}'
+        result = response
+    else:
+        result = '🚫 Пока что нет богатых пользователей 🚫'
+    return result
+
+async def all_msg():
+    cursor.execute('SELECT SUM(message_count) FROM users')
+    total_messages = cursor.fetchone()[0]
+    if total_messages:
+        response = f'{total_messages:,}'
+    else:
+        response = '0'
+    return response
+
+async def all_cats():
+    cursor.execute('SELECT SUM(money) FROM users')
+    total_money = cursor.fetchone()[0]
+    if total_money:
+        response = f'{total_money:,}'
+    else:
+        response = '0'
+    return response
+
+async def all_msg_group(peer_id):
     cursor.execute('SELECT SUM(message_count) FROM group_%s WHERE id > 0', (peer_id,))
     total_messages = cursor.fetchone()[0]
     if total_messages:
@@ -165,7 +219,7 @@ async def all_msg(peer_id):
         response = '0'
     return response
 
-async def all_cats(peer_id):
+async def all_cats_group(peer_id):
     cursor.execute('''
         SELECT SUM(money)
         FROM users
@@ -188,6 +242,8 @@ async def statistic_bd():
 
     result = '⚙️ База данных:\n'
     result += f"├ Всего пользователей: {count_users}\n"
+    result += f'├ Всего котят: {await all_cats()}\n'
+    result += f'├ Всего сообщений: {await all_msg()}\n'
     result += f"└ Всего бесед: {count_groups}"
     return result
 
@@ -205,7 +261,7 @@ async def top_cats(peer_id):
             cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
             name = cursor.fetchone()[0]
             response += f'{i}. @id{user_id}({name}) - {money:,}\n'
-        response += f'\nВсего котят: {await all_cats(peer_id)}'
+        response += f'\nВсего котят: {await all_cats_group(peer_id)}'
         result = response
     else:
         result = '🚫 Пока что нет активных котят 🚫'
@@ -294,8 +350,8 @@ async def info_group(peer_id, message):
     info += f'│ ├ ИИ модуль: {ii_status}\n'
     info += f'│ ├ Хентай модуль: {hentai_status}\n'
     info += f'│ ├ Активный: {top_msg}\n'
-    info += f'│ ├ Всего сообщений: {await all_msg(peer_id)}\n'
-    info += f'│ ├ Всего котят: {await all_cats(peer_id)}\n'
+    info += f'│ ├ Всего сообщений: {await all_msg_group(peer_id)}\n'
+    info += f'│ ├ Всего котят: {await all_cats_group(peer_id)}\n'
     info += f'│ └ Онлайн: {online_count}\n│\n├'
     info += response
     info += '└'
@@ -947,9 +1003,6 @@ async def hi_handler(message: Message):
     elif text == '%(#%#^(%#@^%@#%^%))':
         await repling_messge(message)
 
-    elif text == 'стик':
-        await sendRandomStick(peer_id)
-
     elif text == 'опыт':
         if not message.reply_message:
             await message.answer(await influence_stat(user_id))
@@ -1233,20 +1286,26 @@ async def hi_handler(message: Message):
         cursor.execute(f'SELECT * FROM group_{peer_id} WHERE id = %s', (user_id,))
         result = cursor.fetchone()
         rank = result[3]
-        if rank >= 2 or user_id == 604366930 or user_id == 538065341:
+        if rank >= 2:
             if message.reply_message:
                 user_id_reply = message.reply_message.from_id
-                reason = ' '.join(words[1:])  # Соединяем все слова после команды в строку - причину бана
-                await kick_user(peer_id, user_id_reply)
-                await message.answer(f'Пользователь @id{user_id_repli} был исключен по причине: {reason}')
+                if user_id_reply == user_id:
+                    await message.answer('Лучше не стоит!')
+                else:
+                    reason = ' '.join(words[1:])  # Соединяем все слова после команды в строку - причину бана
+                    await kick_user(peer_id, user_id_reply)
+                    await message.answer(f'Пользователь @id{user_id_repli} был исключен по причине: {reason}')
             else:
                 if len(words) >= 2:  # Проверяем, есть ли второе слово после команды (id пользователя)
                     user_id_match = re.search(r'\[id(\d+)\|@[^\]]+\]', words[1])
                     if user_id_match:
                         opponent_id = user_id_match.group(1)
                         reason = ' '.join(words[2:])  # Соединяем все слова после id пользователя в строку - причину бана
-                        await kick_user(peer_id, opponent_id)
-                        await message.answer(f'Пользователь @id{opponent_id} был исключен по причине: {reason}')
+                        if opponent_id == user_id:
+                            await message.answer('Лучше не стоит!')
+                        else:
+                            await kick_user(peer_id, opponent_id)
+                            await message.answer(f'Пользователь @id{opponent_id} был исключен по причине: {reason}')
                     else:
                         await message.answer('Неправильный формат id пользователя!')
                 else:
@@ -1322,6 +1381,14 @@ async def hi_handler(message: Message):
 
     elif text == 'топ котят':
         msg = await top_cats(peer_id)
+        await message.answer(msg, disable_mentions=1)
+
+    elif text == 'общий топ котят':
+        msg = await top_cats_global()
+        await message.answer(msg, disable_mentions=1)
+
+    elif text == 'общий топ актив':
+        msg = await top_msg_global()
         await message.answer(msg, disable_mentions=1)
 
     elif text == '/henton':
