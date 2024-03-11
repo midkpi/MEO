@@ -108,8 +108,12 @@ async def createdata(user_id, peer_id, message):
         creator = 1
 
     if result is None and user_id > 0:
-        users_info = await bot.api.users.get(user_id)
-        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, %s, 0, NULL, NULL, 0)", (user_id, f'{users_info[0].first_name} {users_info[0].last_name}', 0))
+        try:
+            users_info = await bot.api.users.get(user_id)
+            name = f'{users_info[0].first_name} {users_info[0].last_name}'
+        except Exception:
+            name = 'Не известно'
+        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, %s, 0, NULL, NULL, 0)", (user_id, f'{name}', 0))
     elif result_info is None:
         cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
     elif result_global is None:
