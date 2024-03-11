@@ -558,12 +558,18 @@ async def active(user_id, peer_id, message, text):
                     msg = f'😈 @id{user_id}({info[1]}) игриво укусил @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'кусь':
                     msg = f'😈 @id{user_id}({info[1]}) игриво кусьнул @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'убить':
+                    msg = f'😈🔪 @id{user_id}({info[1]}) тяжелыми ранениями убил @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'расчленить':
+                    msg = f'😈🔪 @id{user_id}({info[1]}) зловещим смехом расчленил @id{user_id_repli}({receiver[1]}) {res}'   
                 elif action == 'зарезать':
                     msg = f'😈🔪 @id{user_id}({info[1]}) скрытно зарезал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'погладить':
                     msg = f'👐😊 @id{user_id}({info[1]}) нежно погладил @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'утопить':
                     msg = f'👐🌊 @id{user_id}({info[1]}) утопил @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'кастрировать':
+                    msg = f'✂🍌 @id{user_id}({info[1]}) кастрировал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'отшлепать':
                    msg = f'🖐️😳 @id{user_id}({info[1]}) неожиданно отшлепал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'отшлёпать':
@@ -592,10 +598,12 @@ async def active(user_id, peer_id, message, text):
                     msg = f'🎇💥 @id{user_id}({info[1]}) и @id{user_id_repli}({receiver[1]}) вместе посмотрели на фейерверки'
                 elif text == 'посмотреть на закат':
                     msg = f'🌅🌆 @id{user_id}({info[1]}) встретил закат с @id{user_id_repli}({receiver[1]})'
+                elif text == 'отправить в дурку':
+                    msg = f'🔗🏥 @id{user_id}({info[1]}) связал и отправил в дурку @id{user_id_repli}({receiver[1]})\n Срок лечения: 5 лет📋'
                 elif text == 'посмотреть на восход':
                     msg = f'🌄🌇 @id{user_id}({info[1]}) встретил восход с @id{user_id_repli}({receiver[1]})'
                 elif action == 'украсть':
-                   msg = f'🛏️😏 @id{user_id}({info[1]}) усыпил и украл @id{user_id_repli}({receiver[1]}) ...\n @id{user_id_repli}({receiver[1]}) , рекомендуем проверить Тест на беременность... У Похителя давно не было секса...'
+                   msg = f'🛏️😏 @id{user_id}({info[1]}) уципил и украл @id{user_id_repli}({receiver[1]}) ...\n @id{user_id_repli}({receiver[1]}) , рекомендуем проверить Тест на беременность... У Похителя давно не было секса...'
                 elif action == 'пнуть':
                    msg = f'🦶😵@id{user_id}({info[1]}) пнул @id{user_id_repli}({receiver[1]}) {res}'
                 elif text == 'кинуть об стену':
@@ -606,6 +614,8 @@ async def active(user_id, peer_id, message, text):
                    msg = f'💰📢 @id{user_id}({info[1]}) вынес приговор своему рабу @id{user_id_repli}({receiver[1]}), выставив на аукцион'
                 elif text == 'отправить на поля':
                    msg = f'☠👺 @id{user_id}({info[1]}) избил плеткой @id{user_id_repli}({receiver[1]}), заставив  горбатиться в полях'
+                elif text == 'продать на органы':
+                   msg = f'🧠💲 @id{user_id}({info[1]}) уципил и продал на органы @id{user_id_repli}({receiver[1]})'
                 elif action == 'казнить':
                    msg = f'☠🪓 @id{user_id}({info[1]}) отрубил голову @id{user_id_repli}({receiver[1]}) {res}'
                 elif text == 'кинуть на кровать':
@@ -1376,6 +1386,20 @@ async def hi_handler(message: Message):
         result = cursor.fetchone()
         user_name = result[0]
         await message.answer(f'@id{user_id}({user_name}) закурил {item}', disable_mentions=1)
+    
+    elif text.startswith('сказать '):
+        item = text[9:]
+        cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        user_name = result[0]
+        await message.answer(f'@id{user_id}({user_name}) сказал {item}', disable_mentions=1)
+
+    elif text.startswith('выпить '):
+        item = text[9:]
+        cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        user_name = result[0]
+        await message.answer(f'@id{user_id}({user_name}) выпил {item}', disable_mentions=1)
 
     elif text == 'топ актив':
         msg = await top_msg(user_id, peer_id)
