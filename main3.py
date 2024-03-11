@@ -1068,7 +1068,7 @@ async def hi_handler(message: Message):
             await message.answer('Возвращайтесь завтра!')
 
     elif text == 'беседа':
-        await message.answer(await info_group(peer_id, message))
+        await message.answer(await info_group(peer_id, message), disable_mentions=1)
 
     elif text == 'сила':
         await message.answer(await statistic_luck(user_id), attachment=random.choice(emy.random_png_power))
@@ -1370,6 +1370,12 @@ async def hi_handler(message: Message):
             conn.commit()
             await message.answer(f'@id{user_id}({user_name}) отдал в приют {amount:,.0f} котят!')
 
+    elif text.startswith('закурить '):
+        item = text[9:]
+        cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        user_name = result[0]
+        await message.answer(f'@id{user_id}({user_name}) закурил {item}', disable_mentions=1)
 
     elif text == 'топ актив':
         msg = await top_msg(user_id, peer_id)
