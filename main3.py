@@ -586,6 +586,10 @@ async def active(user_id, peer_id, message, text):
                    msg = f'🔗😳 @id{user_id}({info[1]}) связал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'полапать':
                    msg = f'👐😏 @id{user_id}({info[1]}) легонько полапал @id{user_id_repli}({receiver[1]}), заставив их после этого уединиться вместе в одной комнате 😊'
+                elif action == 'душить':
+                   msg = f'😵🙌 @id{user_id}({info[1]}) начал душить @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'раздеть':
+                   msg = f'🙌🥰 @id{user_id}({info[1]}) эротично начал раздевать @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'испугать':
                    msg = f'👻😱 @id{user_id}({info[1]}) испугал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'бу':
@@ -606,6 +610,8 @@ async def active(user_id, peer_id, message, text):
                     msg = f'🔗🏥 @id{user_id}({info[1]}) связал и отправил в дурку @id{user_id_repli}({receiver[1]})\n Срок лечения: 5 лет📋'
                 elif text == 'посмотреть на восход':
                     msg = f'🌄🌇 @id{user_id}({info[1]}) встретил восход с @id{user_id_repli}({receiver[1]})'
+                elif text == 'сбросить с крыши':
+                   msg = f'🏠 @id{user_id}({info[1]}) сбросил с крыши 7 этажа @id{user_id_repli}({receiver[1]})'
                 elif action == 'украсть':
                    msg = f'🛏️😏 @id{user_id}({info[1]}) уципил и украл @id{user_id_repli}({receiver[1]}) ...\n @id{user_id_repli}({receiver[1]}) , рекомендуем проверить Тест на беременность... У Похителя давно не было секса...'
                 elif action == 'пнуть':
