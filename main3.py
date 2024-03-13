@@ -143,7 +143,7 @@ async def top_msg(user_id, peer_id):
     cursor.execute('SELECT id, message_count FROM group_%s WHERE id > 0 ORDER BY message_count DESC LIMIT 25', (peer_id,))
     top_users = cursor.fetchall()
     if top_users:
-        response = '📊 РЕЙТИНГ УЧАСТНИКОВ ПО СООБЩЕНИЯМ В БЕСЕДЕ:\n\n'
+        response = '📊 РЕЙТИНГ ПО СООБЩЕНИЯМ В БЕСЕДЕ:\n\n'
         for i, (user_id, message_count) in enumerate(top_users, start=1):
             cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
             name = cursor.fetchone()
@@ -162,7 +162,7 @@ async def top_msg_global():
     cursor.execute('SELECT id, message_count FROM users WHERE id > 0 ORDER BY message_count DESC LIMIT 10')
     top_users = cursor.fetchall()
     if top_users:
-        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ УЧАСТНИКОВ ПО СООБЩЕНИЯМ:\n\n'
+        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ ПО СООБЩЕНИЯМ:\n\n'
         for i, (user_id, message_count) in enumerate(top_users, start=1):
             cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
             name = cursor.fetchone()
@@ -181,7 +181,7 @@ async def top_cats_global():
     cursor.execute('SELECT id, money FROM users WHERE id > 0 ORDER BY money DESC LIMIT 10')
     top_users = cursor.fetchall()
     if top_users:
-        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ УЧАСТНИКОВ ПО КОТЯТАМ:\n\n'
+        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ ПО КОТЯТАМ:\n\n'
         for i, (user_id, money) in enumerate(top_users, start=1):
             cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
             name = cursor.fetchone()
@@ -260,7 +260,7 @@ async def top_cats(peer_id):
     ''', (peer_id,))
     top_cats = cursor.fetchall()
     if top_cats:
-        response = '🐱 ТОП КОТЯТ\n\n'
+        response = '📊 РЕЙТИНГ ПО КОТЯТАМ В БЕСЕДЕ:\n\n'
         for i, (user_id, money) in enumerate(top_cats, start=1):
             cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
             name = cursor.fetchone()[0]
@@ -279,15 +279,30 @@ async def braki(user_id, peer_id):
         processed_pairs = set()  # Для отслеживания уже обработанных пар пользователей
         for i, (id, partner_id) in enumerate(top_users):
             if partner_id is not None and (partner_id, id) not in processed_pairs:  # Проверка наличия обратной связи
+                partner = cursor.fetchone()
+
+                cursor.execute(f'SELECT * FROM group_{peer_id} WHERE id = %s', (id,))
+                result_global = cursor.fetchone()
+
+                partner_time = result_global[4]
+                partner_time = datetime.datetime.strptime(partner_time, '%d.%m.%Y') # Преобразование строки в объект datetime
+                days_since_registration = (datetime.datetime.now() - partner_time).days # Вычисление разницы в днях
+
+                if days_since_registration == 1:
+                    days_word = 'день'
+                elif 2 <= days_since_registration <= 4:
+                    days_word = 'дня'
+                else:
+                    days_word = 'дней'
+
                 cursor.execute('SELECT * FROM users WHERE id = %s', (partner_id,))
                 partner = cursor.fetchone()
                 cursor.execute('SELECT * FROM users WHERE id = %s', (id,))
                 result = cursor.fetchone()
-                cursor.execute(f'SELECT * FROM group_{peer_id} WHERE id = %s', (user_id,))
-                result_global = cursor.fetchone()
                 name = result[1]
                 partner_name = partner[1]
-                response += f'* [id{id}|{name}] и @id{partner_id}({partner_name}) в браке с {result_global[4]}\n'
+                response += f'* [id{id}|{name}] и @id{partner_id}({partner_name}) '
+                response += f'в браке {days_since_registration} {days_word}\n' if days_since_registration > 0 else f'в браке меньше одного дня\n'
                 processed_pairs.add((id, partner_id))  # Добавление пары в обработанные
         result = response
     else:
@@ -479,7 +494,7 @@ async def brak_chek(user_id, peer_id):
             days_word = 'дней'
 
         brak = f'💌 @id{user_id}({user_name})\n'
-        brak += f'├ Брак: @id{partner[0]} ({partner[1]})\n'
+        brak += f'├ Партнёр: @id{partner[0]} ({partner[1]})\n'
         brak += f'└ В браке {days_since_registration} {days_word}' if days_since_registration > 0 else f'└ В браке меньше одного дня\n\n'
     else:
         brak = f'@id{user_id}({result[1]}), у тебя нет второй половинки!\n\nОтправить запрос: брак создать - обязательно ответить на сообщение того с кем хотите пожениться.'
