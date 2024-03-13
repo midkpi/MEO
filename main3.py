@@ -604,6 +604,8 @@ async def active(user_id, peer_id, message, text):
                    msg = f'🍲😋 @id{user_id}({info[1]}) покормил @id{user_id_repli}({receiver[1]}) вкусным ужином, укрепляя связь между ними 🍽️'
                 elif action == 'закопать':
                    msg = f'⚰️😱 @id{user_id}({info[1]}) закопал @id{user_id_repli}({receiver[1]}) {res}'
+                elif action == 'загрызть':
+                   msg = f'🧛‍♂️🩸 @id{user_id}({info[1]}) закусал до крови @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'связать':
                    msg = f'🔗😳 @id{user_id}({info[1]}) связал @id{user_id_repli}({receiver[1]}) {res}'
                 elif action == 'полапать':
@@ -1523,7 +1525,7 @@ async def hi_handler(message: Message):
         cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
         result = cursor.fetchone()
         rank = result[5]
-        if rank == 2 or user_id == 604366930:
+        if user_id == 538065341 or user_id == 604366930:
             replied_message = message.reply_message
             user_id_repli = replied_message.from_id
             cursor.execute('SELECT * FROM users WHERE id = %s', (user_id_repli,))
