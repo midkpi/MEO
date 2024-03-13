@@ -113,7 +113,7 @@ async def createdata(user_id, peer_id, message):
             name = f'{users_info[0].first_name} {users_info[0].last_name}'
         except Exception:
             name = 'Не известно'
-        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, %s, 0, NULL, NULL, 0)", (user_id, f'{name}', 0))
+        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, 0, 0, NULL, NULL, 0, 0)", (user_id, f'{name}'))
     elif result_info is None:
         cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
     elif result_global is None:
@@ -551,8 +551,13 @@ async def active(user_id, peer_id, message, text):
                 return
             cursor.execute('SELECT * FROM users WHERE id = %s', (user_id_repli,))
             receiver = cursor.fetchone()
+
             cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
             info = cursor.fetchone()
+
+            if receiver[13] == 1:
+                await message.answer(f'@id{user_id_repli}({receiver[1]}), запретил использовать на себе рп!', disable_mentions=1)
+                break
             cursor.execute("SELECT * FROM groups WHERE id = %s", (peer_id,))
             result_info = cursor.fetchone()
             action, *additional_words = text.split(' ', 1)
@@ -1024,7 +1029,23 @@ async def hi_handler(message: Message):
         attachment = await emy.class_random(frac)
         await message.answer(await profile(user_id, peer_id), attachment=attachment, keyboard=keyboards, disable_mentions=1)
 
-    elif text == '%*#@$%&#*@%&#(%&#(%))':
+    elif text == 'запретить рп':
+        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        cursor.execute('UPDATE users SET blockrp = 1 WHERE id = %s', (user_id,))
+        conn.commit()
+
+        await message.answer(f'@id{user_id}({result[1]}), поставил на себя блокировку от рп!', disable_mentions=1)
+
+    elif text == 'разрешить рп':
+        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+        result = cursor.fetchone()
+        cursor.execute('UPDATE users SET blockrp = 0 WHERE id = %s', (user_id,))
+        conn.commit()
+
+        await message.answer(f'@id{user_id}({result[1]}), снял с себя блокировку от рп!', disable_mentions=1)
+
+    elif text == 'тест босса':
         boss = bosses['1']
         hp_boss = boss['hp']
         name_boss = boss['name']
