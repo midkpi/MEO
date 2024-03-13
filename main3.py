@@ -155,7 +155,7 @@ async def top_msg(user_id, peer_id):
         response += f'\nВсего сообщений: {await all_msg_group(peer_id)}'
         result = response
     else:
-        result = '🚫 Пока что нет активных пользователей 🚫'
+        result = '🚫 Не известно'
     return result
 
 async def top_msg_global():
@@ -174,7 +174,7 @@ async def top_msg_global():
         response += f'\nВсего сообщений: {await all_msg()}'
         result = response
     else:
-        result = '🚫 Пока что нет активных пользователей 🚫'
+        result = '🚫 Не известно'
     return result
 
 async def top_cats_global():
@@ -193,7 +193,7 @@ async def top_cats_global():
         response += f'\nВсего сообщений: {await all_msg()}'
         result = response
     else:
-        result = '🚫 Пока что нет богатых пользователей 🚫'
+        result = '🚫 Не известно'
     return result
 
 async def all_msg():
@@ -268,12 +268,13 @@ async def top_cats(peer_id):
         response += f'\nВсего котят: {await all_cats_group(peer_id)}'
         result = response
     else:
-        result = '🚫 Пока что нет активных котят 🚫'
+        result = '🚫 Не известно'
     return result
 
 async def braki(user_id, peer_id):
     cursor.execute(f'SELECT id, partner_id FROM group_{peer_id} ORDER BY partner_id')
     top_users = cursor.fetchall()
+    number = 0
     if top_users:
         response = '💍 Список браков данной беседы:\n\n'
         processed_pairs = set()  # Для отслеживания уже обработанных пар пользователей
@@ -301,12 +302,13 @@ async def braki(user_id, peer_id):
                 result = cursor.fetchone()
                 name = result[1]
                 partner_name = partner[1]
-                response += f'* [id{id}|{name}] и @id{partner_id}({partner_name}) '
+                number += 1
+                response += f'{number}. [id{id}|{name}] и @id{partner_id}({partner_name}) '
                 response += f'в браке {days_since_registration} {days_word}\n' if days_since_registration > 0 else f'в браке меньше одного дня\n'
                 processed_pairs.add((id, partner_id))  # Добавление пары в обработанные
-        result = response
+                result = response
     else:
-        result = '🚫 Пока что нет богатых пользователей 🚫'
+        result = '🚫 Не известно'
     return result
 
 async def info_group(peer_id, message):
