@@ -398,18 +398,20 @@ async def profile(user_id, peer_id):
     message_count_global = result_global[1]
     time_reg = result_global[5]
     fraction = result[8]
-
-    time_reg = datetime.datetime.strptime(time_reg, '%d.%m.%Y') # Преобразование строки в объект datetime
-    days_since_registration = (datetime.datetime.now() - time_reg).days # Вычисление разницы в днях
-
-    if days_since_registration == 1:
-        days_word = 'день'
-    elif 2 <= days_since_registration <= 4:
-        days_word = 'дня'
+    if time_reg != '':
+        time_reg = datetime.datetime.strptime(time_reg, '%d.%m.%Y') # Преобразование строки в объект datetime
+        days_since_registration = (datetime.datetime.now() - time_reg).days # Вычисление разницы в днях
+    
+        if days_since_registration == 1:
+            days_word = 'день'
+        elif 2 <= days_since_registration <= 4:
+            days_word = 'дня'
+        else:
+            days_word = 'дней'
+    
+        day = f"{days_since_registration} {days_word}" if days_since_registration > 0 else f'не давно'
     else:
-        days_word = 'дней'
-
-    day = f"{days_since_registration} {days_word}" if days_since_registration > 0 else f'не давно'
+        day = 'давно'
 
     ami = 'Присутствует' if rank >= 2 else 'Отсутствует'
 
