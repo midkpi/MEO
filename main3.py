@@ -89,7 +89,7 @@ async def kick_user(peer_id: int, user_id: int):
         print(f"Ошибка при кике пользователя: {e}")
 
 async def createdata(user_id, peer_id, message):
-    cursor.execute(f'CREATE TABLE IF NOT EXISTS group_{peer_id} (`id` INTEGER PRIMARY KEY, `message_count` INTEGER NOT NULL, `partner_id` INTEGER, `rank` INTEGER NOT NULL, `partner_time` TEXT)')
+    cursor.execute(f'CREATE TABLE IF NOT EXISTS group_{peer_id} (`id` INTEGER PRIMARY KEY, `message_count` INTEGER NOT NULL, `partner_id` INTEGER, `rank` INTEGER NOT NULL, `partner_time` TEXT, time_reg TEXT)')
     cursor.execute('CREATE TABLE IF NOT EXISTS `groups` (`id` INTEGER PRIMARY KEY, `hello_msg` TEXT, `ii` INTEGER, hent INTEGER)')
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     result = cursor.fetchone()
@@ -107,6 +107,11 @@ async def createdata(user_id, peer_id, message):
     else:
         creator = 1
 
+    delta = datetime.timedelta(hours=9, minutes=0)
+    t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+    nowdate = t.strftime("%d.%m.%Y")
+    timeDay = f"{nowdate}"
+
     if result is None and user_id > 0:
         try:
             users_info = await bot.api.users.get(user_id)
@@ -117,7 +122,7 @@ async def createdata(user_id, peer_id, message):
     elif result_info is None:
         cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
     elif result_global is None:
-        cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL)", (user_id,))
+        cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL, %s)", (user_id, timeDay))
     elif result_roulete is None and user_id > 0:
         cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
 
@@ -391,7 +396,20 @@ async def profile(user_id, peer_id):
     bank = result[6]
     message_count = result[2]
     message_count_global = result_global[1]
+    time_reg = result_global[5]
     fraction = result[8]
+
+    time_reg = datetime.datetime.strptime(time_reg, '%d.%m.%Y') # Преобразование строки в объект datetime
+    days_since_registration = (datetime.datetime.now() - time_reg).days # Вычисление разницы в днях
+
+    if days_since_registration == 1:
+        days_word = 'день'
+    elif 2 <= days_since_registration <= 4:
+        days_word = 'дня'
+    else:
+        days_word = 'дней'
+
+    day = f"{days_since_registration} {days_word}" if days_since_registration > 0 else f'не давно'
 
     ami = 'Присутствует' if rank >= 2 else 'Отсутствует'
 
@@ -402,6 +420,7 @@ async def profile(user_id, peer_id):
     profile += f"├ Кол-во сообщений: {message_count}\n"
     profile += f"├ Личный Актив: {message_count_global}\n"
     profile += f"├ Кол-во котят: {money:,.0f}\n"
+    profile += f"├ В беседе {day}\n"
     profile += f"└ Котят в приюте: {bank:,.0f}\n" if result_global[2] is None else ''
     if result_global[2] is not None:
         cursor.execute('SELECT * FROM users WHERE id = %s', (result_global[2],))
@@ -967,7 +986,15 @@ async def hi_handler(event: MessageEvent):
                 peer_id=event.peer_id, message=f'💔 К сожалению...\n@id{partner_id} ({partner_name}), к которому вы испытывали теплые чувства, решил отказаться от вашего предложения! 😔💔', random_id=0, attachment=random.choice(emy.random_marriage_rejection)
             )
 
-async def repling_messge(message):
+
+@bot.on.raw_event(GroupEventType.WALL_POST_NEW, dataclass=GroupTypes.WallPostNew)
+async def wall_post_new(event: GroupTypes.WallPostNew):
+    try:
+        repling_messge(f'wall-{event.group_id}_{event.object.id}')
+    except Exception as ex:
+        print(f'error: {ex}')
+
+async def repling_messge(wallpost):
     # Выполняем запрос
     cursor.execute("SELECT id FROM groups")
 
@@ -976,7 +1003,7 @@ async def repling_messge(message):
     for result in results:
         try:
             await bot.api.messages.send(
-                peer_id=result[0], message=f'Идет проверка рассылки!(На этот раз последняя)', random_id=0
+                peer_id=result[0], message=f'@all Вышел новый пост!', random_id=0, attachment=wallpost
             )
         except Exception as e:
             print(f'Ошибка при отправке сообщения: {e}')
@@ -992,8 +1019,6 @@ async def sendRandomStick(peer_id):
             break
         except Exception as e:
             continue
-
-
 #
 # Основная часть бота
 #
@@ -1047,6 +1072,9 @@ async def hi_handler(message: Message):
 
         await message.answer(f'@id{user_id}({result[1]}), снял с себя блокировку от рп!', disable_mentions=1)
 
+    elif text == 'чат':
+        await message.answer(peer_id)
+
     elif text == 'тест босса':
         boss = bosses['1']
         hp_boss = boss['hp']
@@ -1059,9 +1087,6 @@ async def hi_handler(message: Message):
             f'└ Здоровье: {hp_boss:,.0f}\n',
             attachment=photo_boss
             )
-
-    elif text == '%(#%#^(%#@^%@#%^%))':
-        await repling_messge(message)
 
     elif text == 'опыт':
         if not message.reply_message:
