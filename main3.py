@@ -1084,6 +1084,47 @@ async def sendRandomStick(peer_id):
 #
 # Основная часть бота
 #
+
+@bot.on.chat_message(text=['профиль', 'Профиль'])
+async def hi_handler(message: Message):
+    if message.reply_message:
+        user_id = message.reply_message.from_id
+    else:
+        user_id = message.from_id
+    cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
+    result = cursor.fetchone()
+    frac = result[8]
+    rewardet = result[10]
+    delta = datetime.timedelta(hours=9, minutes=0)
+    t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+    nowdate = t.strftime("%d.%m.%Y")
+    timeDay = f"{nowdate}"
+    if rewardet != timeDay:
+        keyboards = keyboard.keyboard_reward_yes
+    else:
+        keyboards = keyboard.keyboard_reward_no
+    attachment = await emy.class_random(frac)
+    await message.answer(await profile(user_id, message.peer_id), attachment=attachment, keyboard=keyboards, disable_mentions=1)
+
+@bot.on.chat_message(text=['запретить рп', 'Запретить рп'])
+async def hi_handler(message: Message):
+    cursor.execute('SELECT * FROM users WHERE id = %s', (message.from_id,))
+    result = cursor.fetchone()
+    cursor.execute('UPDATE users SET blockrp = 1 WHERE id = %s', (message.from_id,))
+    conn.commit()
+    await message.answer(f'@id{message.from_id}({result[1]}), поставил на себя блокировку от рп!', disable_mentions=1)
+
+
+@bot.on.chat_message(text=['разрешить рп', 'Разрешить рп'])
+async def hi_handler(message: Message):
+    cursor.execute('SELECT * FROM users WHERE id = %s', (message.from_id,))
+    result = cursor.fetchone()
+    cursor.execute('UPDATE users SET blockrp = 0 WHERE id = %s', (message.from_id,))
+    conn.commit()
+    await message.answer(f'@id{message.from_id}({result[1]}), снял с себя блокировку от рп!', disable_mentions=1)
+
+
+
 @bot.on.chat_message()
 async def hi_handler(message: Message):
     user_id = message.from_id
@@ -1097,44 +1138,7 @@ async def hi_handler(message: Message):
 
     text_aup = message.text
 
-    if text == 'профиль':
-        if message.reply_message:
-            user_id = message.reply_message.from_id
-        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
-        result = cursor.fetchone()
-        frac = result[8]
-        rewardet = result[10]
-
-        delta = datetime.timedelta(hours=9, minutes=0)
-        t = (datetime.datetime.now(datetime.timezone.utc) + delta)
-        nowdate = t.strftime("%d.%m.%Y")
-        timeDay = f"{nowdate}"
-
-        if rewardet != timeDay:
-            keyboards = keyboard.keyboard_reward_yes
-        else:
-            keyboards = keyboard.keyboard_reward_no
-
-        attachment = await emy.class_random(frac)
-        await message.answer(await profile(user_id, peer_id), attachment=attachment, keyboard=keyboards, disable_mentions=1)
-
-    elif text == 'запретить рп':
-        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
-        result = cursor.fetchone()
-        cursor.execute('UPDATE users SET blockrp = 1 WHERE id = %s', (user_id,))
-        conn.commit()
-
-        await message.answer(f'@id{user_id}({result[1]}), поставил на себя блокировку от рп!', disable_mentions=1)
-
-    elif text == 'разрешить рп':
-        cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))
-        result = cursor.fetchone()
-        cursor.execute('UPDATE users SET blockrp = 0 WHERE id = %s', (user_id,))
-        conn.commit()
-
-        await message.answer(f'@id{user_id}({result[1]}), снял с себя блокировку от рп!', disable_mentions=1)
-
-    elif text == 'чат':
+    if text == 'чат':
         await message.answer(peer_id)
 
     elif text == 'тест босса':
