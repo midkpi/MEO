@@ -89,50 +89,69 @@ async def kick_user(peer_id: int, user_id: int):
         print(f"Ошибка при кике пользователя: {e}")
 
 async def createdata(user_id, peer_id, message):
-    cursor.execute(f'CREATE TABLE IF NOT EXISTS group_{peer_id} (`id` INTEGER PRIMARY KEY, `message_count` INTEGER NOT NULL, `partner_id` INTEGER, `rank` INTEGER NOT NULL, `partner_time` TEXT, time_reg TEXT)')
-    cursor.execute('CREATE TABLE IF NOT EXISTS `groups` (`id` INTEGER PRIMARY KEY, `hello_msg` TEXT, `ii` INTEGER, hent INTEGER)')
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
-    result = cursor.fetchone()
-    cursor.execute('SELECT * FROM roulete WHERE id = %s', (user_id,))
-    result_roulete = cursor.fetchone()
-    cursor.execute(f"SELECT * FROM group_{peer_id} WHERE id = %s", (user_id,))
-    result_global = cursor.fetchone()
-    cursor.execute("SELECT * FROM groups WHERE id = %s", (peer_id,))
-    result_info = cursor.fetchone()
+    try:
+        cursor.execute(f'CREATE TABLE IF NOT EXISTS group_{peer_id} (`id` INTEGER PRIMARY KEY, `message_count` INTEGER NOT NULL, `partner_id` INTEGER, `rank` INTEGER NOT NULL, `partner_time` TEXT, time_reg TEXT)')
+        cursor.execute('CREATE TABLE IF NOT EXISTS `groups` (`id` INTEGER PRIMARY KEY, `hello_msg` TEXT, `ii` INTEGER, hent INTEGER)')
+        cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+        result = cursor.fetchone()
+        cursor.execute('SELECT * FROM roulete WHERE id = %s', (user_id,))
+        result_roulete = cursor.fetchone()
+        cursor.execute(f"SELECT * FROM group_{peer_id} WHERE id = %s", (user_id,))
+        result_global = cursor.fetchone()
+        cursor.execute("SELECT * FROM groups WHERE id = %s", (peer_id,))
+        result_info = cursor.fetchone()
+    
+        conversation_info = await bot.api.messages.get_conversations_by_id(peer_ids=peer_id)
+        creator_id = conversation_info.items[0].chat_settings.owner_id
+        if creator_id == message.from_id:
+            creator = 3
+        else:
+            creator = 1
+    
+        delta = datetime.timedelta(hours=9, minutes=0)
+        t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+        nowdate = t.strftime("%d.%m.%Y")
+        timeDay = f"{nowdate}"
+    
+        if result is None and user_id > 0:
+            try:
+                users_info = await bot.api.users.get(user_id)
+                name = f'{users_info[0].first_name} {users_info[0].last_name}'
+            except Exception:
+                name = 'Не известно'
+            cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, 0, 0, NULL, NULL, 0, 0, 0)", (user_id, f'{name}'))
+        elif result_info is None:
+            cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
+        elif result_global is None:
+            cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 1, NULL, {creator}, NULL, %s)", (user_id, timeDay))
+        elif result_roulete is None and user_id > 0:
+            cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
+    except Exception as e:
+        await bot.api.messages.send(
+            peer_id=2000000038, message=e, random_id=0
+        )
 
-    conversation_info = await bot.api.messages.get_conversations_by_id(peer_ids=peer_id)
-    creator_id = conversation_info.items[0].chat_settings.owner_id
-    if creator_id == message.from_id:
-        creator = 3
-    else:
-        creator = 1
-
+async def update_bd(user_id, peer_id, message):
     delta = datetime.timedelta(hours=9, minutes=0)
     t = (datetime.datetime.now(datetime.timezone.utc) + delta)
     nowdate = t.strftime("%d.%m.%Y")
     timeDay = f"{nowdate}"
 
-    if result is None and user_id > 0:
-        try:
-            users_info = await bot.api.users.get(user_id)
-            name = f'{users_info[0].first_name} {users_info[0].last_name}'
-        except Exception:
-            name = 'Не известно'
-        cursor.execute("INSERT INTO users VALUES (%s, %s, 1, NULL, 0, 1, 0, NULL, 0, 0, NULL, NULL, 0, 0)", (user_id, f'{name}'))
-    elif result_info is None:
-        cursor.execute("INSERT INTO groups VALUES (%s, NULL, 0, 0)", (peer_id,))
-    elif result_global is None:
-        cursor.execute(f"INSERT INTO group_{peer_id} VALUES (%s, 0, NULL, {creator}, NULL, %s)", (user_id, timeDay))
-    elif result_roulete is None and user_id > 0:
-        cursor.execute('INSERT INTO roulete VALUES (%s, 0, 0, 0, 0, 0)', (user_id,))
-
-async def update_bd(user_id, peer_id, message):
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     result = cursor.fetchone()
     cursor.execute(f"SELECT * FROM group_{peer_id} WHERE id = %s", (user_id,))
     result_global = cursor.fetchone()
+    cursor.execute("SELECT * FROM bot WHERE bot = %s", (1,))
+    botdb = cursor.fetchone()
     try:
         if user_id > 0:
+            if str(timeDay) == str(botdb[1]):
+                daymsg = result[14] + 1
+                cursor.execute('UPDATE users SET messages_day = %s WHERE id = %s', (daymsg, user_id))
+            else:
+                cursor.execute('UPDATE bot SET msg_day = %s WHERE bot = %s', (timeDay, 1))
+                cursor.execute('UPDATE users SET messages_day = %s WHERE id = %s', (1, user_id))
+
             money = result[4] + 1
             message_count = result[2] + 1
             message_count_global = result_global[1] + 1
@@ -142,7 +161,10 @@ async def update_bd(user_id, peer_id, message):
         conn.commit()
         return
     except Exception as e:
-            await createdata(user_id, peer_id, message)
+        await bot.api.messages.send(
+            peer_id=2000000038, message=e, random_id=0
+        )
+        await createdata(user_id, peer_id, message)
 
 async def top_msg(user_id, peer_id):
     cursor.execute('SELECT id, message_count FROM group_%s WHERE id > 0 ORDER BY message_count DESC LIMIT 25', (peer_id,))
@@ -176,6 +198,27 @@ async def top_msg_global():
             else:
                 name = 'Не известно'
             response += f'{i}. @id{user_id}({name}) - {message_count:,}\n'
+        response += f'\nВсего сообщений: {await all_msg()}'
+        result = response
+    else:
+        result = '🚫 Не известно'
+    return result
+
+async def top_msg_global_day():
+    cursor.execute('SELECT id, messages_day FROM users WHERE id > 0 ORDER BY messages_day DESC LIMIT 10')
+    top_users = cursor.fetchall()
+    if top_users:
+        response = '📊 ГЛОБАЛЬНЫЙ РЕЙТИНГ ПО СООБЩЕНИЯМ ЗА СУТКИ:\n\n'
+        for i, (user_id, messages_day) in enumerate(top_users, start=1):
+            if messages_day > 0:
+                cursor.execute('SELECT name FROM users WHERE id = %s', (user_id,))
+                name = cursor.fetchone()
+                if name:
+                    name = name[0]
+                else:
+                    name = 'Не известно'
+                response += f'{i}. @id{user_id}({name}) - {messages_day:,}\n'
+
         response += f'\nВсего сообщений: {await all_msg()}'
         result = response
     else:
@@ -249,7 +292,13 @@ async def statistic_bd():
     cursor.execute("SELECT COUNT(*) FROM groups")
     count_groups = cursor.fetchone()[0]
 
+    delta = datetime.timedelta(hours=9, minutes=0)
+    t = (datetime.datetime.now(datetime.timezone.utc) + delta)
+    nowdate = time.strftime('%d.%m.%Y %H:%M:%S', t.timetuple())
+    timeDay = f"{nowdate}"
+
     result = '⚙️ База данных:\n'
+    result += f"├ Сейчас {timeDay}\n"
     result += f"├ Всего пользователей: {count_users}\n"
     result += f'├ Всего котят: {await all_cats()}\n'
     result += f'├ Всего сообщений: {await all_msg()}\n'
@@ -398,6 +447,7 @@ async def profile(user_id, peer_id):
     message_count_global = result_global[1]
     time_reg = result_global[5]
     fraction = result[8]
+    messages_day = result[14]
     if time_reg != '':
         time_reg = datetime.datetime.strptime(time_reg, '%d.%m.%Y') # Преобразование строки в объект datetime
         days_since_registration = (datetime.datetime.now() - time_reg).days # Вычисление разницы в днях
@@ -419,8 +469,9 @@ async def profile(user_id, peer_id):
     profile += f"├ Роль: {ranks[rank]}\n"
     profile += f"├ Класс: {fractions[fraction]}\n"
     profile += f"├ VIP-Статус: {ami}\n"
-    profile += f"├ Кол-во сообщений: {message_count}\n"
-    profile += f"├ Личный Актив: {message_count_global}\n"
+    profile += f"├ Всего сообщений: {message_count}\n"
+    profile += f"├ Актив в беседе: {message_count_global}\n"
+    profile += f"├ Актив за сутки: {messages_day}\n"
     profile += f"├ Кол-во котят: {money:,.0f}\n"
     profile += f"├ В беседе {day}\n"
     profile += f"└ Котят в приюте: {bank:,.0f}\n" if result_global[2] is None else ''
@@ -991,10 +1042,22 @@ async def hi_handler(event: MessageEvent):
 
 @bot.on.raw_event(GroupEventType.WALL_POST_NEW, dataclass=GroupTypes.WallPostNew)
 async def wall_post_new(event: GroupTypes.WallPostNew):
-    try:
-        repling_messge(f'wall-{event.group_id}_{event.object.id}')
-    except Exception as ex:
-        print(f'error: {ex}')
+    # Выполняем запрос
+    cursor.execute("SELECT id FROM groups")
+
+    # Получаем результаты
+    results = cursor.fetchall()
+    for result in results:
+        try:
+            await bot.api.messages.send(
+                peer_id=result[0], message=f'@all Вышел новый пост!', random_id=0, attachment=f'wall-{event.group_id}_{event.object.id}'
+            )
+        except Exception as e:
+            print(f'Ошибка при отправке сообщения: {e}')
+            # Удаляем запись из базы данных
+            cursor.execute("DELETE FROM groups WHERE id = %s", (result[0],))
+            cursor.execute(f"DELETE FROM group_{result[0]} WHERE id = *")
+            conn.commit()
 
 async def repling_messge(wallpost):
     # Выполняем запрос
@@ -1009,9 +1072,6 @@ async def repling_messge(wallpost):
             )
         except Exception as e:
             print(f'Ошибка при отправке сообщения: {e}')
-            # Удаляем запись из базы данных
-            cursor.execute("DELETE FROM groups WHERE id = %s", (result[0],))
-            conn.commit()
 
 async def sendRandomStick(peer_id):
     while True:
@@ -1496,6 +1556,10 @@ async def hi_handler(message: Message):
 
     elif text == 'общий топ актив':
         msg = await top_msg_global()
+        await message.answer(msg, disable_mentions=1)
+
+    elif text == 'общий топ актив сутки':
+        msg = await top_msg_global_day()
         await message.answer(msg, disable_mentions=1)
 
     elif text == '/henton':
